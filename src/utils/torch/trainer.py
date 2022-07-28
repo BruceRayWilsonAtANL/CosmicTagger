@@ -1,4 +1,6 @@
 import os
+from pickle import TRUE
+from re import I
 import sys
 import time
 import tempfile
@@ -96,6 +98,18 @@ class torch_trainer(trainercore):
         if self.is_training():
             self.build_lr_schedule()
 
+        if self.args.run.compute_mode == ComputeMode.HPU:
+
+            import habana_frameworks.torch.core as htcore
+            self.htcore = htcore
+            import habana_frameworks.torch.utils.debug as htdebug
+
+            if self.args.run.lazy_mode:
+                os.environ["PT_HPU_LAZY_MODE"]="1"
+                #self.htcore.enable_weight_permute_pass(True)
+            else:
+                os.environ["PT_HPU_LAZY_MODE"]="2"
+
         with self.default_device_context():
             self.init_network()
 
@@ -108,6 +122,11 @@ class torch_trainer(trainercore):
 
             if self.is_training():
                 self.init_optimizer()
+
+            if self.args.run.compute_mode == ComputeMode.HPU:
+                self.permute_params(self._net, True)
+                self.permute_momentum(self._opt, True)
+            #    self.htcore.enable_weight_permute_pass(True)
 
             self.init_saver()
 
@@ -135,6 +154,46 @@ class torch_trainer(trainercore):
             if self.args.mode.name == ModeKind.inference:
                 self.inference_metrics = {}
                 self.inference_metrics['n'] = 0
+
+    def permute_params(self, model, to_filters_last):
+        import habana_frameworks.torch.utils.debug as htdebug
+        if htdebug._is_enabled_synapse_layout_handling():
+            print("permute_params disabled")
+            return
+        if self.htcore.is_enabled_weight_permute_pass() is True:
+            return
+        with torch.no_grad():
+            for name, param in model.named_parameters():
+                if(param.ndim == 4):
+                    if to_filters_last:
+                        param.data = param.data.permute((2, 3, 1, 0))
+                    else:
+                        param.data = param.data.permute((3, 2, 0, 1))
+        if self.args.run.lazy_mode:
+            self.htcore.mark_step()
+
+    def permute_momentum(self, optimizer, to_filters_last):
+        import habana_frameworks.torch.utils.debug as htdebug
+        if htdebug._is_enabled_synapse_layout_handling():
+            print("permute_momentum disabled")
+            return
+	# Permute the momentum buffer before using for checkpoint
+        if self.htcore.is_enabled_weight_permute_pass() is True:
+            return
+        for group in optimizer.param_groups:
+            for p in group['params']:
+                param_state = optimizer.state[p]
+                if 'momentum_buffer' in param_state:
+                    buf = param_state['momentum_buffer']
+                    if(buf.ndim == 4):
+                        if to_filters_last:
+                            buf = buf.permute((2,3,1,0))
+                        else:
+                            buf = buf.permute((3,2,0,1))
+                        param_state['momentum_buffer'] = buf
+
+        if self.args.run.lazy_mode:
+            self.htcore.mark_step()
 
 
     def trace_module(self):
@@ -257,6 +316,9 @@ class torch_trainer(trainercore):
 
     def restore_state(self, state):
 
+        if self.args.run.compute_mode == ComputeMode.HPU:
+            self.permute_params(self._net, False)
+
         new_state_dict = {}
         for key in state['state_dict']:
             if key.startswith("module."):
@@ -281,6 +343,11 @@ class torch_trainer(trainercore):
                     if torch.is_tensor(v):
                         state[k] = v.cuda()
 
+        # Permute conv weight from RSCK(HPU Format) to KCRS(CPU Format)
+        if self.args.run.compute_mode == ComputeMode.HPU:
+            self._net = self._net.to("hpu")
+            self.permute_params(self._net, True)
+
         return True
 
     def save_model(self):
@@ -290,10 +357,28 @@ class torch_trainer(trainercore):
 
         current_file_path, checkpoint_file_path = self.get_model_filepath()
 
+        # Permute conv weight from RSCK(HPU Format) to KCRS(CPU Format)
+        if self.args.run.compute_mode == ComputeMode.HPU:
+            self.permute_params(self._net, False)
+
+        if self.args.network.conv_mode == ConvMode.conv_2D and not self.args.framework.sparse:
+            from src.networks.torch.uresnet2D import UResNet
+            copy_model = UResNet(self.args.network)
+
+        else:
+            if self.args.framework.sparse and self.args.mode.name != ModeKind.iotest:
+                from src.networks.torch.sparseuresnet3D import UResNet3D
+            else:
+                from src.networks.torch.uresnet3D       import UResNet3D
+
+            copy_model = UResNet3D(self.args.network, self.larcv_fetcher.image_size())
+        
+        copy_model.load_state_dict(self._net.state_dict())
+
         # save the model state into the file path:
         state_dict = {
             'global_step' : self._global_step,
-            'state_dict'  : self._net.state_dict(),
+            'state_dict'  : copy_model.state_dict(),
             'optimizer'   : self._opt.state_dict(),
             'scheduler'   : self.lr_scheduler.state_dict(),
         }
@@ -303,6 +388,10 @@ class torch_trainer(trainercore):
             os.makedirs(os.path.dirname(current_file_path))
 
         torch.save(state_dict, current_file_path)
+
+        # Permute conv weight from KCRS(CPU Format) to RSCK(HPU Format)
+        if self.args.run.compute_mode == ComputeMode.HPU:
+            self.permute_params(self._net, True)
 
         # Parse the checkpoint file to see what the last checkpoints were:
 
@@ -462,7 +551,7 @@ class torch_trainer(trainercore):
 
             # Build up a string for logging:
             if self._log_keys != []:
-                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key]) for key in self._log_keys])
+                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key].item()) for key in self._log_keys])
             else:
                 s = ", ".join(["{0}: {1:.3}".format(key, metrics[key]) for key in metrics])
 
@@ -598,8 +687,10 @@ class torch_trainer(trainercore):
         # elif self.args.run.compute_mode == "DPCPP":
         #     return contextlib.nullcontext
         #     # device = torch.device("dpcpp")
+        elif self.args.run.compute_mode == ComputeMode.HPU:
+            return contextlib.nullcontext()
         else:
-            return contextlib.nullcontext
+            return contextlib.nullcontext()
             # device = torch.device('cpu')
 
     def default_device(self):
@@ -610,6 +701,8 @@ class torch_trainer(trainercore):
             device = torch.device("xpu")
         # elif self.args.run.compute_mode == "DPCPP":
         #     device = torch.device("dpcpp")
+        elif self.args.run.compute_mode == ComputeMode.HPU:
+            device = torch.device("hpu")
         else:
             device = torch.device('cpu')
         return device
@@ -733,8 +826,8 @@ class torch_trainer(trainercore):
                     else:
                         loss.backward()
 
-
-
+                    if self.args.run.lazy_mode:
+                        self.htcore.mark_step()
 
                     # Compute any necessary metrics:
                     interior_metrics = self._compute_metrics(logits_image, labels_image, loss)
@@ -776,6 +869,9 @@ class torch_trainer(trainercore):
             else:
                 self._opt.step()
 
+            if self.args.run.lazy_mode:
+                self.htcore.mark_step()
+
             self.lr_scheduler.step()
 
             if verbose: logger.debug("Updated Weights")
@@ -816,30 +912,31 @@ class torch_trainer(trainercore):
         # fit onto a gpu or other accelerator
         if self._global_step != 0 and self._global_step % self.args.run.aux_iterations == 0:
 
-            self._net.eval()
-            # Fetch the next batch of data with larcv
-            # (Make sure to pull from the validation set)
-            io_start_time = datetime.datetime.now()
-            minibatch_data = self.larcv_fetcher.fetch_next_batch('aux', force_pop = True)
-            io_end_time = datetime.datetime.now()
+            with torch.no_grad():
+                self._net.eval()
+                # Fetch the next batch of data with larcv
+                # (Make sure to pull from the validation set)
+                io_start_time = datetime.datetime.now()
+                minibatch_data = self.larcv_fetcher.fetch_next_batch('aux', force_pop = True)
+                io_end_time = datetime.datetime.now()
 
-            # if mixed precision, and cuda, use autocast:
-            if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
-                with torch.cuda.amp.autocast():
+                # if mixed precision, and cuda, use autocast:
+                if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
+                    with torch.cuda.amp.autocast():
+                        logits_image, labels_image = self.forward_pass(minibatch_data)
+                else:
                     logits_image, labels_image = self.forward_pass(minibatch_data)
-            else:
-                logits_image, labels_image = self.forward_pass(minibatch_data)
 
-            # Compute the loss based on the logits
-            loss = self.loss_calculator(labels_image, logits_image)
+                # Compute the loss based on the logits
+                loss = self.loss_calculator(labels_image, logits_image)
 
-            # Compute any necessary metrics:
-            metrics = self._compute_metrics(logits_image, labels_image, loss)
+                # Compute any necessary metrics:
+                metrics = self._compute_metrics(logits_image, labels_image, loss)
 
 
-            self.log(metrics, saver="test")
-            self.summary(metrics, saver="test")
-            self.summary_images(logits_image, labels_image, saver="test")
+                self.log(metrics, saver="test")
+                self.summary(metrics, saver="test")
+                self.summary_images(logits_image, labels_image, saver="test")
 
             return
 
