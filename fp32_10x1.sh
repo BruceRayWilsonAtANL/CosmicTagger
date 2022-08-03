@@ -1,8 +1,9 @@
 for i in {1..5}
 do
+    name=fp32_10x1_${i}
     python bin/exec.py \
     mode=train \
-    run.id='fp32_10x1_${i}' \
+    run.id=${name} \
     run.distributed=False \
     data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
     framework=torch \
