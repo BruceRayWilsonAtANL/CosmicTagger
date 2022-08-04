@@ -255,3 +255,19 @@ python bin/exec.py \
     run.precision=3 > fp16_10x3.log 2>&1 &
 
 ```
+
+## Multi-HPU Runs
+
+```bash
+mpirun -n 8 --bind-to core --map-by slot:PE=7 --rank-by core --report-bindings --allow-run-as-root \
+python bin/exec.py \
+    mode=train \
+    run.id='fp16_10x1' \
+    run.distributed=True \
+    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
+    framework=torch \
+    run.compute_mode=HPU \
+    run.minibatch_size=1 \
+    run.iterations=10 \
+    run.precision=3
+```

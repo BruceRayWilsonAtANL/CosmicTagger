@@ -9,6 +9,6 @@ do
     framework=torch \
     run.compute_mode=HPU \
     run.minibatch_size=1 \
-    run.iterations=10 \
+    run.iterations=500 \
     run.precision=0 > fp32_10x1_${i}.log 2>&1 &
 done
