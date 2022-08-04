@@ -2,42 +2,29 @@ import argparse
 
 
 def add_args():
-    parser = argparse.ArgumentParser(description="AT_PT")
+    parser = argparse.ArgumentParser(description="CT args generator")
 
-    parser.add_argument('--batch-size', type=int, default=4096, metavar='N',
-                        help='input batch size for training (default: %(default)s)')
-    parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N',
-                        help='input batch size for testing (default: %(default)s)')
-    parser.add_argument('--epochs', type=int, default=10, metavar='N',
-                        help='number of epochs to train (default: %(default)s)')
-    parser.add_argument('--lr', type=float, default=0.0007, metavar='LR',
-                        help='learning rate (default: %(default)s)')
-    parser.add_argument('--gamma', type=float, default=0.7, metavar='M',
-                        help='Learning rate step gamma (default: %(default)s)')
-
-    parser.add_argument('--no-cuda', action='store_true', default=False,
-                        help='disables CUDA training (default: %(default)s)')
-    parser.add_argument('--dry-run', action='store_true', default=False,
-                        help='quickly check a single pass (default: %(default)s)')
-    parser.add_argument('--seed', type=int, default=42, metavar='S',
-                        help='random seed (default: %(default)s)')
-    parser.add_argument('--log-interval', type=int, default=10, metavar='N',
-                        help='how many batches to wait before logging training status (default: %(default)s)')
-    parser.add_argument('--save-model', action='store_true', default=False,
-                        help='For Saving the current Model (default: %(default)s)')
-
-    parser.add_argument('--model-path', type=str, default='my_model',
-                        help='path to save model (default: %(default)s)')
-    parser.add_argument('--dropout', type=float, default=0.27,
-                        help='Dropout percentage (default: %(default)s)')
-    parser.add_argument('--optimizer', type=str, default='adam', choices=['adam'],
-                        help='Optimizer name adam (default: %(default)s)')
-
-
-
-# Run this many copies of the program on the given nodes.
     parser.add_argument('-n', type=int, default=0,
                         help='Run this many copies of the program on the given nodes. n > 0 for mpirun (default: %(default)s)')
+    parser.add_argument('--minibatch-size', type=int, default=1,
+                        help='Minibatch size (default: %(default)s)')
+    parser.add_argument('--iterations', type=int, default=10,
+                        help='Number of iterations to run (default: %(default)s)')
+
+    precisionDict = {
+        'float32':  0,
+        'mixed':    1,
+        'bfloat16': 2,
+        'float16':  3,
+    }
+
+    precisionChoices = []
+    for key, value in precisionDict.items():
+        precisionChoices.append(key)
+
+    parser.add_argument('--precision', type=str, default='float32', choices=precisionChoices,
+                        help='Precision (default: %(default)s)')
+
 
     parser.add_argument('--hpu', action='store_true', default=False,
                         help='Use hpu device')
@@ -70,5 +57,8 @@ def add_args():
 
 
     args = parser.parse_args()
+
+
+    args.precision = precisionDict[args.precision]
 
     return args
