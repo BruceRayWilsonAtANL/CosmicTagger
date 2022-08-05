@@ -8,16 +8,20 @@ def main():
 
     args = add_args()
 
-    ctRunCommand = "python bin/exec.py<newline>" + \
-    "mode=train<newline>" + \
-    f"run.id='{args.precision}_{args.minibatch_size}x{args.iterations}'<newline>" + \
-    "run.distributed=False<newline>" + \
-    "data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/<newline>" + \
-    "framework=torch<newline>" + \
-    "run.compute_mode=HPU<newline>" + \
-    f"run.minibatch_size={args.minibatch_size}<newline>" + \
-    f"run.iterations={args.iterations}<newline>" + \
-    f"run.precision={args.precisionId}"
+    ctRunCommand = \
+    f"    name={args.precision}_{args.minibatch_size}x{args.iterations}" + \
+    "_${i}\n" + \
+    "    python bin/exec.py<newline>" + \
+    "    mode=train<newline>" + \
+    "    run.id=${name}<newline>" + \
+    "    run.distributed=False<newline>" + \
+    "    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/<newline>" + \
+    "    framework=torch<newline>" + \
+    "    run.compute_mode=HPU<newline>" + \
+    f"    run.minibatch_size={args.minibatch_size}<newline>" + \
+    f"    run.iterations={args.iterations}<newline>" + \
+    f"    run.precision={args.precisionId}" + \
+    " > ${name}.log 2>&1 &"
 
 
     # Deal with CT run.precision = mixed
@@ -27,19 +31,26 @@ def main():
 
     if args.n > 0:
         ctRunCommand = ctRunCommand.replace('run.distributed=False', 'run.distributed=True')
-        mpirunCommand = f"mpirun -n {args.n} --bind-to core --map-by slot:PE=7 --rank-by core --report-bindings --allow-run-as-root<newline>"
+        mpirunCommand = f"    mpirun -n {args.n} --bind-to core --map-by slot:PE=7 --rank-by core --report-bindings --allow-run-as-root<newline>"
         finalCommand = mpirunCommand + ctRunCommand
     else:
         finalCommand = ctRunCommand
 
-    print(f'Command: \n{finalCommand}')
+    #print(f'Command: \n{finalCommand}')
 
-    print(f'\n\nCommand:')
+    #print(f'\n\nCommand:')
+
+    print('for i in {1..5}')
+    print('do')
 
     commandLine = finalCommand.split('<newline>')
     for line in commandLine:
-        print(f'{line} \\')
+        if line.find('run.precision') < 0:
+            print(f'{line} \\')
+        else:
+            print(f'{line}')
 
+    print('done')
 
 
     return 0
