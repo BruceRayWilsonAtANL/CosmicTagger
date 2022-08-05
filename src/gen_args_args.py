@@ -4,11 +4,11 @@ import argparse
 def add_args():
     parser = argparse.ArgumentParser(description="CT args generator")
 
-    parser.add_argument('-n', type=int, default=0,
+    parser.add_argument('-n', type=int, default=0, metavar='N',
                         help='Run this many copies of the program on the given nodes. n > 0 for mpirun (default: %(default)s)')
-    parser.add_argument('--minibatch-size', type=int, default=1,
+    parser.add_argument('--minibatch-size', type=int, default=1, metavar='N',
                         help='Minibatch size (default: %(default)s)')
-    parser.add_argument('--iterations', type=int, default=10,
+    parser.add_argument('--iterations', type=int, default=10, metavar='N',
                         help='Number of iterations to run (default: %(default)s)')
 
     precisionDict = {
@@ -30,11 +30,16 @@ def add_args():
                         help='Use hpu device')
     parser.add_argument('--use_lazy_mode', action='store_true', default=False,
                         help='Enable lazy mode on hpu device, default eager mode')
-    parser.add_argument('--hmp', dest='is_hmp', action='store_true', help='enable hmp mode')
-    parser.add_argument('--hmp-bf16', default='ops_bf16_mnist.txt', help='path to bf16 ops list in hmp O1 mode')
-    parser.add_argument('--hmp-fp32', default='ops_fp32_mnist.txt', help='path to fp32 ops list in hmp O1 mode')
-    parser.add_argument('--hmp-opt-level', default='O1', help='choose optimization level for hmp')
-    parser.add_argument('--hmp-verbose', action='store_true', help='enable verbose mode for hmp')
+    parser.add_argument('--hmp', dest='is_hmp', action='store_true', 
+                        help='enable hmp mode')
+    parser.add_argument('--hmp-bf16', default='ops_bf16_mnist.txt', metavar='PATH',
+                        help='path to bf16 ops list in hmp O1 mode')
+    parser.add_argument('--hmp-fp32', default='ops_fp32_mnist.txt', metavar='PATH',
+                        help='path to fp32 ops list in hmp O1 mode')
+    parser.add_argument('--hmp-opt-level', default='O1', 
+                        help='choose optimization level for hmp')
+    parser.add_argument('--hmp-verbose', action='store_true', 
+                        help='enable verbose mode for hmp')
 
     
     
@@ -59,6 +64,6 @@ def add_args():
     args = parser.parse_args()
 
 
-    args.precision = precisionDict[args.precision]
+    args.precisionId = precisionDict[args.precision]
 
     return args
