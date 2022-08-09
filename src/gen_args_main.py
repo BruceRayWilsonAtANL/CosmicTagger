@@ -8,6 +8,11 @@ def main():
 
     args = add_args()
 
+    if args.hpu:
+        computeModeStr = "    run.compute_mode=HPU<newline>"
+    else:
+        computeModeStr = "    run.compute_mode=CPU<newline>"
+
     ctRunCommand = \
     f"    name={args.precision}_{args.minibatch_size}x{args.iterations}" + \
     "_${i}\n" + \
@@ -17,17 +22,22 @@ def main():
     "    run.distributed=False<newline>" + \
     "    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/<newline>" + \
     "    framework=torch<newline>" + \
-    "    run.compute_mode=HPU<newline>" + \
+    computeModeStr + \
     f"    run.minibatch_size={args.minibatch_size}<newline>" + \
     f"    run.iterations={args.iterations}<newline>" + \
-    f"    run.precision={args.precisionId}" + \
-    " > ${name}.log 2>&1 &"
+    f"    run.precision={args.precisionId}<newline>"
+
+    logStr = " > ${name}.log 2>&1 &"
+
+
 
 
     # Deal with CT run.precision = mixed
     if args.precision == 'mixed':
-        mixedPrecisionStr = f'<newline>--hmp --hmp-bf16={args.hmp_bf16} --hmp-fp32={args.hmp_fp32}'
-        ctRunCommand += mixedPrecisionStr
+        mixedPrecisionStr = f'    --hmp --hmp-bf16={args.hmp_bf16} --hmp-fp32={args.hmp_fp32}'
+        ctRunCommand += mixedPrecisionStr + logStr
+    else:
+        ctRunCommand += logStr
 
     if args.n > 0:
         ctRunCommand = ctRunCommand.replace('run.distributed=False', 'run.distributed=True')
@@ -45,7 +55,7 @@ def main():
 
     commandLine = finalCommand.split('<newline>')
     for line in commandLine:
-        if line.find('run.precision') < 0:
+        if line.find('hmp') < 0:
             print(f'{line} \\')
         else:
             print(f'{line}')

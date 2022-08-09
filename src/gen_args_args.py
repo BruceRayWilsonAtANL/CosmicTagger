@@ -14,8 +14,8 @@ def add_args():
     precisionDict = {
         'float32':  0,
         'mixed':    1,
-        'bfloat16': 2,
-        'float16':  3,
+        #'bfloat16': 2,
+        #'float16':  3,
     }
 
     precisionChoices = []
@@ -26,7 +26,7 @@ def add_args():
                         help='Precision (default: %(default)s)')
 
 
-    parser.add_argument('--hpu', action='store_true', default=False,
+    parser.add_argument('--hpu', action='store_true', default=True,
                         help='Use hpu device')
     parser.add_argument('--use_lazy_mode', action='store_true', default=False,
                         help='Enable lazy mode on hpu device, default eager mode')

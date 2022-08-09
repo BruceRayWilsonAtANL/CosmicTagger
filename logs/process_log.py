@@ -2,6 +2,7 @@
 
 # The logs have already been combined with:
 # cat fp32_10x*.log | grep 'process last'
+# cat float16_*.log | grep 'process last'
 
 import csv
 

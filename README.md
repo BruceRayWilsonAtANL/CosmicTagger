@@ -5,7 +5,7 @@
 # Neutrino and Cosmic Tagging with UNet
 
 This repository contains models and training utilities to train convolutional networks to separate cosmic pixels, background pixels, and neutrino pixels in a neutrinos dataset.  There are several variations. A detailed description of the code can be found in:
-* [*Cosmic Background Removal with Deep Neural Networks in SBND*](https://arxiv.org/abs/2012.01301) 
+* [*Cosmic Background Removal with Deep Neural Networks in SBND*](https://arxiv.org/abs/2012.01301)
 
 
 This network is implemented in both PyTorch and TensorFlow.  To select between the networks, you can use the `--framework` parameter.  It accepts either `tensorflow` or `torch`.  The model is available in a development version with sparse convolutions in the `torch` framework.
@@ -14,21 +14,23 @@ This network is implemented in both PyTorch and TensorFlow.  To select between t
 
 CosmicTagger's dependencies can be installed via Conda and/or Pip. For example, Conda can be used to acquire many of the build dependencies for both CosmicTagger and `larcv3`
 
-```
+```bash
 conda create -n cosmic_tagger python==3.7
 conda install cmake hdf5 scikit-build numpy
 ```
 
-As of April 2021, the version of `larcv3` on PyPI (v3.3.3) does not work with CosmicTagger. A version corresponding to commit `c73936e` or later is currently necessary. To build `larcv3` from source, 
-```
+As of April 2021, the version of `larcv3` on PyPI (v3.3.3) does not work with CosmicTagger. A version corresponding to commit `c73936e` or later is currently necessary. To build `larcv3` from source,
+
+```bash
 git clone https://github.com/DeepLearnPhysics/larcv3.git
 cd larcv3
 git submodule update --init
 pip install -e .
 ```
 
-Then, in the CosmicTagger directory, 
-```
+Then, in the CosmicTagger directory,
+
+```bash
 pip install -r requirements.txt
 ```
 
@@ -36,7 +38,7 @@ pip install -r requirements.txt
 
 In general, this network has a suite of parameters available, for example:
 
-```
+```text
 -- CONFIG --
 data:
   aux_file....................: cosmic_tagging_test.h5
@@ -100,7 +102,7 @@ run:
 
 The data for this network is in larcv3 format (https://github.com/DeepLearnPhysics/larcv3).  Currently, data is available in full resolution (HxW == 1280x2048) of 3 images per training sample.  This image size is large, and the network is large, so to accomodate older hardware or smaller GPUs this can be run with a reduced image size.  The datasets are kept at full resolution but a downsampling operation is applied prior to feeding images and labels to the network.
 
-The UNet design is symmetric and does downsampling/upsampling by factors of 2.  So, in order to preserve the proper sizes during the upsampling sets, it's important that the smallest resolution image reached by the network does not contain a dimension with an odd number of pixels.  Concretely, this means that the sum of `network_depth` and `downsample_images` must be less than 8, since 1280 pixels / 2^8 = 5. 
+The UNet design is symmetric and does downsampling/upsampling by factors of 2.  So, in order to preserve the proper sizes during the upsampling sets, it's important that the smallest resolution image reached by the network does not contain a dimension with an odd number of pixels.  Concretely, this means that the sum of `network_depth` and `downsample_images` must be less than 8, since 1280 pixels / 2^8 = 5.
 
 The training dataset `cosmic_tagging_train.h5` contains 43075 images.  The validation set `cosmic_tagging_val.h5`, specified by `--aux-file` and used to monitor overfitting during training, is 7362 images.  The final hold-out test set `cosmic_tagging_test.h5` contains 7449 images. To evaluate the accuracy of a trained model on the hold-out test set (after all training and tuning is complete), rerun the application in inference mode with `data.file=cosmic_tagging_test.h5`
 
@@ -144,12 +146,11 @@ There are several analysis metrics that are used to judge the quality of the tra
  3) Cosmic IoU: what is the IoU of all pixels predicted cosmic and all pixels labeled cosmic?  This should acheive > 90%
  4) Neutrino IoU: Same definition as 4 but for neutrinos.  This should acheive > 70%.
 
-
 # Citations
 
-```
+```text
 @misc{sbndcollaboration2021cosmic,
-      title={Cosmic Background Removal with Deep Neural Networks in SBND}, 
+      title={Cosmic Background Removal with Deep Neural Networks in SBND},
       author={SBND Collaboration and R. Acciarri and C. Adams and C. Andreopoulos and J. Asaadi and M. Babicz and C. Backhouse and W. Badgett and L. Bagby and D. Barker and V. Basque and M. and C. and Q. Bazetto and M. Betancourt and A. Bhanderi and A. Bhat and C. Bonifazi and D. Brailsford and A. and G. Brandt and T. Brooks and M. and F. Carneiro and Y. Chen and H. Chen and G. Chisnall and J. and I. Crespo-Anadón and E. Cristaldo and C. Cuesta and I. and L. de Icaza Astiz and A. De Roeck and G. de Sá Pereira and M. Del Tutto and V. Di Benedetto and A. Ereditato and J. and J. Evans and A. and C. Ezeribe and R. and S. Fitzpatrick and B. and T. Fleming and W. Foreman and D. Franco and I. Furic and A. and P. Furmanski and S. Gao and D. Garcia-Gamez and H. Frandini and G. Ge and I. Gil-Botella and S. Gollapinni and O. Goodwin and P. Green and W. and C. Griffith and R. Guenette and P. Guzowski and T. Ham and J. Henzerling and A. Holin and B. Howard and R. and S. Jones and D. Kalra and G. Karagiorgi and L. Kashur and W. Ketchum and M. and J. Kim and V. and A. Kudryavtsev and J. Larkin and H. Lay and I. Lepetic and B. and R. Littlejohn and W. and C. Louis and A. and A. Machado and M. Malek and D. Mardsen and C. Mariani and F. Marinho and A. Mastbaum and K. Mavrokoridis and N. McConkey and V. Meddage and D. and P. Méndez and T. Mettler and K. Mistry and A. Mogan and J. Molina and M. Mooney and L. Mora and C. and A. Moura and J. Mousseau and A. Navrer-Agasson and F. and J. Nicolas-Arnaldos and J. and A. Nowak and O. Palamara and V. Pandey and J. Pater and L. Paulucci and V. and L. Pimentel and F. Psihas and G. Putnam and X. Qian and E. Raguzin and H. Ray and M. Reggiani-Guzzo and D. Rivera and M. Roda and M. Ross-Lonergan and G. Scanavini and A. Scarff and D. and W. Schmitz and A. Schukraft and E. Segreto and M. Soares Nunes and M. Soderberg and S. Söldner-Rembold and J. Spitz and N. and J. and C. Spooner and M. Stancari and G. and V. Stenico and A. Szelc and W. Tang and J. Tena Vidal and D. Torretta and M. Toups and C. Touramanis and M. Tripathi and S. Tufanli and E. Tyley and G. and A. Valdiviesso and E. Worcester and M. Worcester and G. Yarbrough and J. Yu and B. Zamorano and J. Zennamo and A. Zglam},
       year={2021},
       eprint={2012.01301},
@@ -157,4 +158,3 @@ There are several analysis metrics that are used to judge the quality of the tra
       primaryClass={physics.data-an}
 }
 ```
-

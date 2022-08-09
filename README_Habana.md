@@ -35,9 +35,9 @@ sudo apt-get install cmake libhdf5-serial-dev python-dev
 ```
 
 ```bash
-rm -rf ~/venvs/habana/venv_ct5
-python3.8 -m venv --system-site-packages ~/venvs/habana/venv_ct5
-source ~/venvs/habana/venv_ct5/bin/activate
+rm -rf ~/venvs/habana/venv_ct6
+python3.8 -m venv --system-site-packages ~/venvs/habana/venv_ct6
+source ~/venvs/habana/venv_ct6/bin/activate
 pip3 install scikit-build numpy
 ```
 
@@ -46,11 +46,10 @@ pip3 install scikit-build numpy
 #### Install Requirements System Admin Only
 
 ```bash
-# This must be done in the repo root.
 deactive
 sudo ./tensorflow_system_installation.sh
 sudo ./pytorch_system_installation.sh
-source ~/venvs/habana/venv_ct5/bin/activate
+source ~/venvs/habana/venv_ct6/bin/activate
 ```
 
 #### Install Requirements User
@@ -64,9 +63,9 @@ Ignore them**
 #PYTHON=`which python` ./pytorch_venv_installation.sh -sys
 #PYTHON=`which python` ./tensorflow_venv_installation.sh --pip_user false
 #source ~/.bashrc
-source ~/venvs/habana/venv_ct5/bin/activate
+source ~/venvs/habana/venv_ct6/bin/activate
 export PYTHONPATH=$(which python)  # Maybe not.
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
 ```bash
@@ -78,15 +77,15 @@ export HABANA_LOGS=~/.habana_logs
 Example:
 
 ```bash
-python bin/exec.py mode=train run.id='02' run.distributed=False data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ framework=torch network.normalization=batch run.minibatch_size=2
+xpython bin/exec.py mode=train run.id='02' run.distributed=False data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ framework=torch network.normalization=batch run.minibatch_size=2
 ```
 
 ```bash
-python bin/exec.py mode=train run.id='02' run.distributed=False data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ framework=torch network.normalization=batch run.minibatch_size=2 run.iterations=1
+xpython bin/exec.py mode=train run.id='02' run.distributed=False data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ framework=torch network.normalization=batch run.minibatch_size=2 run.iterations=1
 ```
 
 ```bash
-python bin/exec.py mode=train run.id='02' run.distributed=False data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ framework=torch run.minibatch_size=2 run.iterations=1
+xpython bin/exec.py mode=train run.id='02' run.distributed=False data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ framework=torch run.minibatch_size=2 run.iterations=1
 ```
 
 From Corey Adams:
@@ -270,4 +269,13 @@ python bin/exec.py \
     run.minibatch_size=1 \
     run.iterations=10 \
     run.precision=3
+```
+
+```text
+For multi-node please check the doc https://docs.habana.ai/en/latest/PyTorch/PyTorch_Scaling_Guide/DDP_Based_Scaling.html#scale-out-using-gaudi-nics
+How resnet work on multiple node is an example you can follow: https://github.com/HabanaAI/Model-References/tree/master/PyTorch/computer_vision/classification/torchvision#multinode-training
+```
+
+```text
+You can directly set -x GC_KERNEL_PATH without explicitly setting it, and it will inherit the value from current environment. For URL I guess you mean the domain name, it should work for -H , but it might not work for --mca btl_tcp_if_include. You can give it a try. If it doesn't work you can use ip -br -4 a  to find out the IP of current machine.
 ```
