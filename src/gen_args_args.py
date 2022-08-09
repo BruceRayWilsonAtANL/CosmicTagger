@@ -14,7 +14,7 @@ def add_args():
     precisionDict = {
         'float32':  0,
         'mixed':    1,
-        #'bfloat16': 2,
+        'bfloat16': 2,
         #'float16':  3,
     }
 

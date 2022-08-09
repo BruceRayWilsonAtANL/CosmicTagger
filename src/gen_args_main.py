@@ -27,7 +27,7 @@ def main():
     f"    run.iterations={args.iterations}<newline>" + \
     f"    run.precision={args.precisionId}<newline>"
 
-    logStr = " > ${name}.log 2>&1 &"
+    logStr = "    > ${name}.log 2>&1 &"
 
 
 
@@ -55,7 +55,7 @@ def main():
 
     commandLine = finalCommand.split('<newline>')
     for line in commandLine:
-        if line.find('hmp') < 0:
+        if line.find('hmp') < 0 and  line.find('2>&1') < 0:
             print(f'{line} \\')
         else:
             print(f'{line}')
