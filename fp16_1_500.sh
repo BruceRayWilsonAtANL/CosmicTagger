@@ -1,6 +1,8 @@
 for i in {1..5}
 do
-    name=float16_4x500_${i}
+    minibatch_size=1
+    iterations=500
+    name=fp16_${minibatch_size}x${iterations}_${i}
     python bin/exec.py \
     mode=train \
     run.id=${name} \
@@ -8,7 +10,7 @@ do
     data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
     framework=torch \
     run.compute_mode=HPU \
-    run.minibatch_size=4 \
-    run.iterations=500 \
+    run.minibatch_size=${minibatch_size} \
+    run.iterations=${iterations} \
     run.precision=3 > ${name}.log 2>&1 &
 done

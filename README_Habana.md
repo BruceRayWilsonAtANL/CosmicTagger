@@ -58,20 +58,16 @@ source ~/venvs/habana/venv_ct6/bin/activate
 Ignore them**
 
 ```bash
-# This must be done in the repo root.
-# This might require sudo priviledges.
-#PYTHON=`which python` ./pytorch_venv_installation.sh -sys
-#PYTHON=`which python` ./tensorflow_venv_installation.sh --pip_user false
-#source ~/.bashrc
 source ~/venvs/habana/venv_ct6/bin/activate
-export PYTHONPATH=$(which python)  # Maybe not.
+cd ~/DL/BruceRayWilsonAtANL/CosmicTagger
+python3 -m pip install scikit-build numpy
 python3 -m pip install -r requirements.txt
 ```
 
 ```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu
 export PT_HPU_ENABLE_SYNAPSE_LAYOUT_HANDLING=false
 export HABANA_LOGS=~/.habana_logs
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu
 ```
 
 Example:
@@ -114,150 +110,14 @@ I, Bruce, asked Habana if they support gradient accumulation and they said yes.
 ```bash
 screen
 git checkout Habana_1.5.0
-python bin/exec.py \
-    mode=train \
-    mode.optimizer.gradient_accumulation=10 \
-    run.id='fp32_10x2_1' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=2 \
-    run.iterations=10 \
-    run.precision=0 > fp32_10x2_1.log 2>&1 &
-
-
-
-python bin/exec.py \
-    mode=train \
-    run.id='fp32_100x2_1' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=2 \
-    run.iterations=100 \
-    run.precision=0 > fp32_100x2_1.log 2>&1 &
-python bin/exec.py \
-    mode=train \
-    run.id='fp32_1000x2_1' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=2 \
-    run.iterations=1000 \
-    run.precision=0 > fp32_1000x2_1.log 2>&1 &
-```
-
-```bash
-screen
-git checkout Habana_1.5.0
-python bin/exec.py \
-    mode=train \
-    run.id='bf16 10x2' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=2 \
-    run.iterations=10 \
-    run.precision=3 > fp16_10x2_1.log 2>&1 &
-
-
-python bin/exec.py \
-    mode=train \
-    run.id='fp32_10x2_1' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=2 \
-    run.iterations=10 \
-    run.precision=0 > fp32_10x2_1.log 2>&1 &
-```
-
-These work 20220803
-
-```bash
-screen
-python bin/exec.py \
-    mode=train \
-    run.id='fp32_10x1' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=1 \
-    run.iterations=10 \
-    run.precision=0 > fp32_10x1.log 2>&1 &
-
-python bin/exec.py \
-    mode=train \
-    run.id='fp32_10x2' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=2 \
-    run.iterations=10 \
-    run.precision=0 > fp32_10x2.log 2>&1 &
-
-python bin/exec.py \
-    mode=train \
-    run.id='fp32_10x3' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=3 \
-    run.iterations=10 \
-    run.precision=0 > fp32_10x3.log 2>&1 &
-
-```
-
-These work 20220803
-
-```bash
-#screen
-python bin/exec.py \
-    mode=train \
-    run.id='fp16_10x1' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=1 \
-    run.iterations=10 \
-    run.precision=3 > fp16_10x1.log 2>&1 &
-
-python bin/exec.py \
-    mode=train \
-    run.id='fp16_10x2' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=2 \
-    run.iterations=10 \
-    run.precision=3 > fp16_10x2.log 2>&1 &
-
-python bin/exec.py \
-    mode=train \
-    run.id='fp16_10x3' \
-    run.distributed=False \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-    framework=torch \
-    run.compute_mode=HPU \
-    run.minibatch_size=3 \
-    run.iterations=10 \
-    run.precision=3 > fp16_10x3.log 2>&1 &
-
+source fp32_1_500.sh
+source fp16_1_500.sh
 ```
 
 ## Multi-HPU Runs
 
 ```bash
+# Does not work.
 mpirun -n 8 --bind-to core --map-by slot:PE=7 --rank-by core --report-bindings --allow-run-as-root \
 python bin/exec.py \
     mode=train \
@@ -269,7 +129,22 @@ python bin/exec.py \
     run.minibatch_size=1 \
     run.iterations=10 \
     run.precision=3
+
+# Trying...  Starts well...  Ends well.
+mpirun -n 8 --bind-to core --map-by slot:PE=7 --rank-by core --report-bindings --allow-run-as-root \
+python bin/exec.py \
+    mode=train \
+    run.id='fp16_10x1' \
+    run.distributed=True \
+    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
+    framework=torch \
+    run.compute_mode=HPU \
+    run.minibatch_size=8 \
+    run.iterations=10 \
+    run.precision=3
 ```
+
+## My Notes
 
 ```text
 For multi-node please check the doc https://docs.habana.ai/en/latest/PyTorch/PyTorch_Scaling_Guide/DDP_Based_Scaling.html#scale-out-using-gaudi-nics
