@@ -142,6 +142,19 @@ python bin/exec.py \
     run.minibatch_size=8 \
     run.iterations=10 \
     run.precision=3
+
+# Try
+mpirun -n 8 --bind-to core --map-by slot:PE=7 --rank-by core --report-bindings --allow-run-as-root \
+python bin/exec.py \
+    mode=train \
+    run.id='fp32_2x500' \
+    run.distributed=True \
+    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
+    framework=torch \
+    run.compute_mode=HPU \
+    run.minibatch_size=16 \
+    run.iterations=500 \
+    run.precision=0
 ```
 
 ## My Notes
