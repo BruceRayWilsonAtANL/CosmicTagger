@@ -1,4 +1,6 @@
 import os
+from pickle import TRUE
+from re import I
 import sys
 import time
 import tempfile
@@ -95,6 +97,16 @@ class torch_trainer(trainercore):
 
         if self.is_training():
             self.build_lr_schedule()
+
+        if self.args.run.compute_mode == ComputeMode.HPU:
+
+            import habana_frameworks.torch.core as htcore
+            self.htcore = htcore
+
+            if self.args.run.lazy_mode:
+                os.environ["PT_HPU_LAZY_MODE"]="1"
+            else:
+                os.environ["PT_HPU_LAZY_MODE"]="2"
 
         with self.default_device_context():
             self.init_network()
@@ -462,7 +474,7 @@ class torch_trainer(trainercore):
 
             # Build up a string for logging:
             if self._log_keys != []:
-                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key]) for key in self._log_keys])
+                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key].item()) for key in self._log_keys])
             else:
                 s = ", ".join(["{0}: {1:.3}".format(key, metrics[key]) for key in metrics])
 
@@ -598,8 +610,10 @@ class torch_trainer(trainercore):
         # elif self.args.run.compute_mode == "DPCPP":
         #     return contextlib.nullcontext
         #     # device = torch.device("dpcpp")
+        elif self.args.run.compute_mode == ComputeMode.HPU:
+            return contextlib.nullcontext()
         else:
-            return contextlib.nullcontext
+            return contextlib.nullcontext()
             # device = torch.device('cpu')
 
     def default_device(self):
@@ -610,6 +624,8 @@ class torch_trainer(trainercore):
             device = torch.device("xpu")
         # elif self.args.run.compute_mode == "DPCPP":
         #     device = torch.device("dpcpp")
+        elif self.args.run.compute_mode == ComputeMode.HPU:
+            device = torch.device("hpu")
         else:
             device = torch.device('cpu')
         return device
@@ -733,8 +749,8 @@ class torch_trainer(trainercore):
                     else:
                         loss.backward()
 
-
-
+                    if self.args.run.lazy_mode:
+                        self.htcore.mark_step()
 
                     # Compute any necessary metrics:
                     interior_metrics = self._compute_metrics(logits_image, labels_image, loss)
@@ -776,6 +792,9 @@ class torch_trainer(trainercore):
             else:
                 self._opt.step()
 
+            if self.args.run.lazy_mode:
+                self.htcore.mark_step()
+
             self.lr_scheduler.step()
 
             if verbose: logger.debug("Updated Weights")
@@ -816,30 +835,31 @@ class torch_trainer(trainercore):
         # fit onto a gpu or other accelerator
         if self._global_step != 0 and self._global_step % self.args.run.aux_iterations == 0:
 
-            self._net.eval()
-            # Fetch the next batch of data with larcv
-            # (Make sure to pull from the validation set)
-            io_start_time = datetime.datetime.now()
-            minibatch_data = self.larcv_fetcher.fetch_next_batch('aux', force_pop = True)
-            io_end_time = datetime.datetime.now()
+            with torch.no_grad():
+                self._net.eval()
+                # Fetch the next batch of data with larcv
+                # (Make sure to pull from the validation set)
+                io_start_time = datetime.datetime.now()
+                minibatch_data = self.larcv_fetcher.fetch_next_batch('aux', force_pop = True)
+                io_end_time = datetime.datetime.now()
 
-            # if mixed precision, and cuda, use autocast:
-            if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
-                with torch.cuda.amp.autocast():
+                # if mixed precision, and cuda, use autocast:
+                if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
+                    with torch.cuda.amp.autocast():
+                        logits_image, labels_image = self.forward_pass(minibatch_data)
+                else:
                     logits_image, labels_image = self.forward_pass(minibatch_data)
-            else:
-                logits_image, labels_image = self.forward_pass(minibatch_data)
 
-            # Compute the loss based on the logits
-            loss = self.loss_calculator(labels_image, logits_image)
+                # Compute the loss based on the logits
+                loss = self.loss_calculator(labels_image, logits_image)
 
-            # Compute any necessary metrics:
-            metrics = self._compute_metrics(logits_image, labels_image, loss)
+                # Compute any necessary metrics:
+                metrics = self._compute_metrics(logits_image, labels_image, loss)
 
 
-            self.log(metrics, saver="test")
-            self.summary(metrics, saver="test")
-            self.summary_images(logits_image, labels_image, saver="test")
+                self.log(metrics, saver="test")
+                self.summary(metrics, saver="test")
+                self.summary_images(logits_image, labels_image, saver="test")
 
             return
 
