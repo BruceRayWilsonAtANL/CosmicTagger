@@ -43,12 +43,6 @@ class exec(object):
 
         self.validate_arguments()
 
-        # Print the command line args to the log file:
-        logger = logging.getLogger()
-        logger.info("Dumping launch arguments.")
-        logger.info(sys.argv)
-
-
         if config.mode.name == ModeKind.train:
             self.train()
         if config.mode.name == ModeKind.iotest:
@@ -250,17 +244,11 @@ class exec(object):
                 logger.warning("Torch requires channels_first, switching automatically")
                 self.args.data.data_format = DataFormatKind.channels_first
 
-        elif self.args.framework.name == "tensorflow":
-            if self.args.mode.name == ModeKind.train:
-                if self.args.mode.quantization_aware:
-                    logger.error("Quantization aware training not implemented in tensorflow.")
-
         self.args.network.data_format = self.args.data.data_format.name
 
 
 
-
-@hydra.main(version_base=None, config_path="../src/config", config_name="config")
+@hydra.main(config_path="../src/config", config_name="config")
 def main(cfg : OmegaConf) -> None:
 
     s = exec(cfg)
@@ -270,5 +258,5 @@ if __name__ == '__main__':
     #  Is this good practice?  No.  But hydra doesn't give a great alternative
     import sys
     if "--help" not in sys.argv and "--hydra-help" not in sys.argv:
-        sys.argv += ['hydra/job_logging=disabled']
+        sys.argv += ['hydra.run.dir=.', 'hydra/job_logging=disabled']
     main()
