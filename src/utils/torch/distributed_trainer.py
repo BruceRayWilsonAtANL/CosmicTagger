@@ -3,6 +3,10 @@ import sys
 import time, datetime
 from collections import OrderedDict
 
+import contextlib
+
+
+
 import numpy
 
 import torch
@@ -16,7 +20,6 @@ try:
 except:
     pass
 
-import contextlib
 import logging
 logger = logging.getLogger()
 logger.propogate = False
@@ -131,7 +134,7 @@ class distributed_trainer(torch_trainer):
 
             # What backend?  nccl on GPU, gloo on CPU
             if self.args.run.compute_mode == ComputeMode.XPU:
-                import torch_ccl
+                # import torch_ccl
                 backend = 'ccl'
             elif self.args.run.compute_mode == ComputeMode.GPU: backend = 'nccl'
             elif self.args.run.compute_mode == ComputeMode.CPU: backend = 'gloo'
@@ -180,8 +183,11 @@ class distributed_trainer(torch_trainer):
             return contextlib.nullcontext
             # device = torch.device("dpcpp")
         else:
-            return contextlib.nullcontext()
+            return contextlib.nullcontext
             # device = torch.device('cpu')
+
+    def barrier(self):
+        MPI.COMM_WORLD.Barrier()
 
     def default_device(self):
 
@@ -210,8 +216,9 @@ class distributed_trainer(torch_trainer):
         torch_trainer.init_optimizer(self)
 
         if self.args.framework.distributed_mode == DistributedMode.horovod:
+            print(self._opt)
             self._opt = hvd.DistributedOptimizer(self._opt, named_parameters=self._net.named_parameters())
-
+            self._opt.param_groups[0]['capturable'] = True
         self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
 
 

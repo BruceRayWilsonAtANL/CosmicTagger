@@ -100,10 +100,13 @@ class tf_trainer(trainercore):
         self.forward_pass(image, label, training=False)
 
 
+
         self.acc_calculator  = AccuracyCalculator.AccuracyCalculator()
         if self.is_training():
-            self.loss_calculator = LossCalculator.LossCalculator(
+            reg_loss_fn = self._net.reg_loss
+            self.loss_calculator = LossCalculator.LossCalculator(reg_loss_fn,
                 self.args.mode.optimizer.loss_balance_scheme, self._channels_dim)
+
 
         self._log_keys = ["loss", "Average/Non_Bkg_Accuracy", "Average/mIoU"]
 
@@ -115,9 +118,8 @@ class tf_trainer(trainercore):
         for var in self._net.variables:
             n_trainable_parameters += numpy.prod(var.get_shape())
             if verbose:
-                logger.debug(var.name, var.get_shape())
+                logger.info(f"{var.name}: {var.get_shape()}")
         logger.info(f"Total number of trainable parameters in this network: {n_trainable_parameters}")
-
 
     def n_parameters(self):
         n_trainable_parameters = 0
@@ -233,7 +235,6 @@ class tf_trainer(trainercore):
 
 
         def check_inference_weights_path(file_path):
-            print(file_path)
             # Look for the "checkpoint" file:
             checkpoint_file_path = file_path + "checkpoint"
             # If it exists, open it and read the latest checkpoint:
@@ -252,7 +253,6 @@ class tf_trainer(trainercore):
 
 
         path = tf.train.latest_checkpoint(file_path)
-
 
         if path is None:
             logger.info("No checkpoint found, starting from scratch")
@@ -328,6 +328,9 @@ class tf_trainer(trainercore):
 
 
     def init_optimizer(self):
+
+        if self.args.mode.name != ModeKind.train: return
+
         from src.config import OptimizerKind
 
         self.init_learning_rate()
@@ -346,7 +349,7 @@ class tf_trainer(trainercore):
 
         self.tape = tf.GradientTape()
 
-    def _compute_metrics(self, logits, prediction, labels, loss):
+    def _compute_metrics(self, logits, prediction, labels, loss, reg_loss):
 
         # self._output['softmax'] = [ tf.nn.softmax(x) for x in self._logits]
         # self._output['prediction'] = [ tf.argmax(input=x, axis=self._channels_dim) for x in self._logits]
@@ -366,7 +369,9 @@ class tf_trainer(trainercore):
         metrics["Average/mIoU"]                    = tf.reduce_mean(accuracy["miou"])
 
         if loss is not None:
-            metrics['loss'] = loss
+            metrics['loss/loss'] = loss
+        if reg_loss is not None:
+            metrics['loss/reg_loss'] = reg_loss
 
         return metrics
 
@@ -441,7 +446,6 @@ class tf_trainer(trainercore):
 
     # @tf.function
     def get_gradients(self, loss, tape, trainable_weights):
-
         return tape.gradient(loss, self._net.trainable_weights)
 
     @tf.function
@@ -474,13 +478,14 @@ class tf_trainer(trainercore):
 
             # Fetch the next batch of data with larcv
             minibatch_data = self.larcv_fetcher.fetch_next_batch('aux', force_pop = True)
+
             image, label = self.cast_input(minibatch_data['image'], minibatch_data['label'])
 
             labels, logits, prediction = self.forward_pass(image, label, training=False)
 
-            loss = self.loss_calculator(labels, logits)
+            loss, current_reg_loss = self.loss_calculator(labels, logits)
 
-            metrics = self._compute_metrics(logits, prediction, labels, loss)
+            metrics = self._compute_metrics(logits, prediction, labels, loss, current_reg_loss)
 
 
             # Report metrics on the terminal:
@@ -493,30 +498,35 @@ class tf_trainer(trainercore):
         return
 
 
-    @tf.function
+    # @tf.function
     def gradient_step(self, image, label):
 
         with self.tape:
-            labels, logits, prediction = self.forward_pass(image, label, training=True)
+            with self.timing_context("forward"):
+                labels, logits, prediction = self.forward_pass(image, label, training=True)
 
-            # The loss function has to be in full precision or automatic mixed.
-            # bfloat16 is not supported
-            if self.args.run.precision == Precision.bfloat16:
-                logits = [ tf.cast(l, dtype=tf.float32) for  l in logits ]
+            with self.timing_context("loss"):
 
-            loss = self.loss_calculator(labels, logits)
-        #
-            if self.args.run.precision == Precision.mixed:
-                scaled_loss = self._opt.get_scaled_loss(loss)
+                # The loss function has to be in full precision or automatic mixed.
+                # bfloat16 is not supported
+                if self.args.run.precision == Precision.bfloat16:
+                    logits = [ tf.cast(l, dtype=tf.float32) for  l in logits ]
+
+                loss, reg_loss = self.loss_calculator(labels, logits)
+            #
+                loss = loss + reg_loss
+
+                if self.args.run.precision == Precision.mixed:
+                    scaled_loss = self._opt.get_scaled_loss(loss)
 
         # Do the backwards pass for gradients:
-        if self.args.run.precision == Precision.mixed:
-            scaled_gradients = self.get_gradients(scaled_loss, self.tape, self._net.trainable_weights)
-            gradients = self._opt.get_unscaled_gradients(scaled_gradients)
-        else:
-            gradients = self.get_gradients(loss, self.tape, self._net.trainable_weights)
-
-        return logits, labels, prediction, loss, gradients
+        with self.timing_context("backward"):
+            if self.args.run.precision == Precision.mixed:
+                scaled_gradients = self.get_gradients(scaled_loss, self.tape, self._net.trainable_weights)
+                gradients = self._opt.get_unscaled_gradients(scaled_gradients)
+            else:
+                gradients = self.get_gradients(loss, self.tape, self._net.trainable_weights)
+        return logits, labels, prediction, loss - reg_loss, gradients, reg_loss
 
     def train_step(self):
 
@@ -532,7 +542,9 @@ class tf_trainer(trainercore):
 
             # Fetch the next batch of data with larcv
             io_start_time = datetime.datetime.now()
-            minibatch_data = self.larcv_fetcher.fetch_next_batch("train",force_pop=True)
+            with self.timing_context("io"):
+                minibatch_data = self.larcv_fetcher.fetch_next_batch("train",force_pop=True)
+
             image, label = self.cast_input(minibatch_data['image'], minibatch_data['label'])
 
             io_end_time = datetime.datetime.now()
@@ -541,7 +553,7 @@ class tf_trainer(trainercore):
             if self.args.run.profile:
                 if not self.args.distributed or self._rank == 0:
                     tf.profiler.experimental.start(self.args.output_dir + "/train/")
-            logits, labels, prediction, loss, internal_gradients = self.gradient_step(image, label)
+            logits, labels, prediction, loss, internal_gradients, reg_loss = self.gradient_step(image, label)
 
             if self.args.run.profile:
                 if not self.args.distributed or self._rank == 0:
@@ -553,9 +565,9 @@ class tf_trainer(trainercore):
             else:
                 gradients += internal_gradients
 
-
             # Compute any necessary metrics:
-            interior_metrics = self._compute_metrics(logits, prediction, labels, loss)
+            with self.timing_context("metrics"):
+                interior_metrics = self._compute_metrics(logits, prediction, labels, loss, reg_loss)
 
             for key in interior_metrics:
                 if key in metrics:
@@ -582,7 +594,8 @@ class tf_trainer(trainercore):
         if gradient_accumulation != 1:
             gradients = [ g / gradient_accumulation for g in gradients ]
 
-        self.apply_gradients(gradients)
+        with self.timing_context("optimizer"):
+            self.apply_gradients(gradients)
 
 
         # Add the global step / second to the tensorboard log:
@@ -594,12 +607,13 @@ class tf_trainer(trainercore):
             metrics['images_per_second'] = 0.0
 
 
+        with self.timing_context("summary"):
+            self.summary(metrics)
+            self.summary_images(labels, prediction)
 
-        self.summary(metrics)
-        self.summary_images(labels, prediction)
-
-        # Report metrics on the terminal:
-        self.log(metrics, kind="Train", step=int(self.current_step().numpy()))
+        with self.timing_context("log"):
+            # Report metrics on the terminal:
+            self.log(metrics, kind="Train", step=int(self.current_step().numpy()))
 
 
         global_end_time = datetime.datetime.now()
@@ -664,7 +678,7 @@ class tf_trainer(trainercore):
 
 
         # Compute any necessary metrics:
-        metrics = self._compute_metrics(logits, prediction, labels, loss=None)
+        metrics = self._compute_metrics(logits, prediction, labels, loss=None, reg_loss=None)
 
 
         if tf.math.is_nan(metrics['Average/mIoU']):

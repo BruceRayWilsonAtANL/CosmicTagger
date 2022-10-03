@@ -1,6 +1,4 @@
 import os
-from pickle import TRUE
-from re import I
 import sys
 import time
 import tempfile
@@ -16,7 +14,7 @@ import numpy
 
 import torch
 try:
-    import torch_ipex as ipex
+    import ipex
 except:
     pass
 
@@ -66,7 +64,7 @@ class torch_trainer(trainercore):
 
         if self.args.network.conv_mode == ConvMode.conv_2D and not self.args.framework.sparse:
             from src.networks.torch.uresnet2D import UResNet
-            self._net = UResNet(self.args.network)
+            self._raw_net = UResNet(self.args.network)
 
         else:
             if self.args.framework.sparse and self.args.mode.name != ModeKind.iotest:
@@ -74,19 +72,26 @@ class torch_trainer(trainercore):
             else:
                 from src.networks.torch.uresnet3D       import UResNet3D
 
-            self._net = UResNet3D(self.args.network, self.larcv_fetcher.image_size())
+            self._raw_net = UResNet3D(self.args.network, self.larcv_fetcher.image_size())
 
 
 
 
         if self.is_training():
-            self._net.train(True)
+             self._raw_net.train(True)
 
 
 
         self._log_keys = ['Average/Non_Bkg_Accuracy', 'Average/mIoU']
         if self.is_training():
             self._log_keys.append("loss")
+
+        # Foregoing any fusions as to not disturb the existing ingestion pipeline
+        if self.is_training() and self.args.mode.quantization_aware:
+            self._raw_net.qconfig = torch.quantization.get_default_qat_qconfig('fbgemm')
+            self._net = torch.quantization.prepare_qat(self._raw_net)
+        else:
+            self._net = self._raw_net
 
     def initialize(self, io_only=False):
 
@@ -172,7 +177,7 @@ class torch_trainer(trainercore):
     def print_network_info(self, verbose=False):
         if verbose:
             for name, var in self._net.named_parameters():
-                print(name, var.shape,var.device)
+                logger.info(f"{name}: {var.shape}")
 
         logger.info("Total number of trainable parameters in this network: {}".format(self.n_parameters()))
 
@@ -206,6 +211,8 @@ class torch_trainer(trainercore):
         else:
             self._opt = torch.optim.Adam(self._net.parameters(), 1.0)
 
+        # For a regression in pytowrch 1.12.0:
+        self._opt.param_groups[0]["capturable"] = False
 
         self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
 
@@ -474,7 +481,7 @@ class torch_trainer(trainercore):
 
             # Build up a string for logging:
             if self._log_keys != []:
-                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key].item()) for key in self._log_keys])
+                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key]) for key in self._log_keys])
             else:
                 s = ", ".join(["{0}: {1:.3}".format(key, metrics[key]) for key in metrics])
 
