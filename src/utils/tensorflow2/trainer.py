@@ -38,6 +38,7 @@ class tf_trainer(trainercore):
 
     def __init__(self, args):
         trainercore.__init__(self, args)
+        self._rank = None
 
     def local_batch_size(self):
         return self.args.run.minibatch_size
@@ -184,6 +185,9 @@ class tf_trainer(trainercore):
 
     def initialize(self, io_only=False):
 
+        if self.args.run.compute_mode == ComputeMode.HPU:
+            from habana_frameworks.tensorflow import load_habana_module
+            load_habana_module()
 
         self._initialize_io(color=0)
 

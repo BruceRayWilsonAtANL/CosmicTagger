@@ -102,6 +102,11 @@ class distributed_trainer(torch_trainer):
             size = MPI.COMM_WORLD.Get_size()
             rank = MPI.COMM_WORLD.Get_rank()
 
+            if self.args.run.compute_mode == ComputeMode.HPU:
+                import habana_frameworks.torch.distributed.hccl
+            else:
+                torch.cuda.set_device(int(local_rank))
+
 
             os.environ["RANK"] = str(rank)
             os.environ["WORLD_SIZE"] = str(size)
@@ -133,17 +138,24 @@ class distributed_trainer(torch_trainer):
                 backend = 'ccl'
             elif self.args.run.compute_mode == ComputeMode.GPU: backend = 'nccl'
             elif self.args.run.compute_mode == ComputeMode.CPU: backend = 'gloo'
+            elif self.args.run.compute_mode == ComputeMode.HPU: backend = 'hccl'
 
             # init_method = 'file:///home/cadams/ddp_init/ddp_init.txt'
             init_method = 'env://'
 
-            torch.distributed.init_process_group(
-                backend     = backend,
-                init_method = init_method,
-                world_size  = size,
-                rank        = rank,
-                timeout     = datetime.timedelta(seconds=120)
-            )
+            if self.args.run.compute_mode == ComputeMode.HPU:
+                # Here we assume the number of process per node is 8
+                os.environ["ID"] = str(rank % 8 )
+                os.environ["LOCAL_RANK"] = str(rank % 8 )
+                torch.distributed.init_process_group(backend=backend, rank=rank, world_size=size)
+            else:
+                torch.distributed.init_process_group(
+                    backend     = backend,
+                    init_method = init_method,
+                    world_size  = size,
+                    rank        = rank,
+                    timeout     = datetime.timedelta(seconds=120)
+                )
 
 
     def save_model(self):
@@ -189,6 +201,8 @@ class distributed_trainer(torch_trainer):
             device = torch.device(f"xpu:{self._local_rank}")
         elif self.args.run.compute_mode == ComputeMode.DPCPP:
             device = torch.device("dpcpp")
+        elif self.args.run.compute_mode == ComputeMode.HPU:
+            device = torch.device("hpu")
         else:
             device = torch.device('cpu')
         return device
