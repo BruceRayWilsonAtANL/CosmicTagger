@@ -2,11 +2,8 @@
 
 
 
-# Neutrino and Cosmic Tagging with UNet
-
 This repository contains models and training utilities to train convolutional networks to separate cosmic pixels, background pixels, and neutrino pixels in a neutrinos dataset.  There are several variations. A detailed description of the code can be found in:
-* [*Cosmic Background Removal with Deep Neural Networks in SBND*](https://www.frontiersin.org/articles/10.3389/frai.2021.649917/full) 
-
+* [*Cosmic Background Removal with Deep Neural Networks in SBND*](https://www.frontiersin.org/articles/10.3389/frai.2021.649917/full)
 
 This network is implemented in both PyTorch and TensorFlow.  To select between the networks, you can use the `--framework` parameter.  It accepts either `tensorflow` or `torch`.  The model is available in a development version with sparse convolutions in the `torch` framework.
 
@@ -19,7 +16,7 @@ conda create -n cosmic_tagger python==3.7
 conda install cmake hdf5 scikit-build numpy
 ```
 
-As of April 2021, the version of `larcv3` on PyPI (v3.3.3) does not work with CosmicTagger. A version corresponding to commit `c73936e` or later is currently necessary. To build `larcv3` from source, 
+As of April 2021, the version of `larcv3` on PyPI (v3.3.3) does not work with CosmicTagger. A version corresponding to commit `c73936e` or later is currently necessary. To build `larcv3` from source,
 ```
 git clone https://github.com/DeepLearnPhysics/larcv3.git
 cd larcv3
@@ -27,7 +24,7 @@ git submodule update --init
 pip install -e .
 ```
 
-Then, in the CosmicTagger directory, 
+Then, in the CosmicTagger directory,
 ```
 pip install -r requirements.txt
 ```
@@ -102,7 +99,7 @@ Data may be downloaded from Globus  [here](https://app.globus.org/file-manager?o
 
 The data for this network is in larcv3 format (https://github.com/DeepLearnPhysics/larcv3).  Currently, data is available in full resolution (HxW == 1280x2048) of 3 images per training sample.  This image size is large, and the network is large, so to accomodate older hardware or smaller GPUs this can be run with a reduced image size.  The datasets are kept at full resolution but a downsampling operation is applied prior to feeding images and labels to the network.
 
-The UNet design is symmetric and does downsampling/upsampling by factors of 2.  So, in order to preserve the proper sizes during the upsampling sets, it's important that the smallest resolution image reached by the network does not contain a dimension with an odd number of pixels.  Concretely, this means that the sum of `network_depth` and `downsample_images` must be less than 8, since 1280 pixels / 2^8 = 5. 
+The UNet design is symmetric and does downsampling/upsampling by factors of 2.  So, in order to preserve the proper sizes during the upsampling sets, it's important that the smallest resolution image reached by the network does not contain a dimension with an odd number of pixels.  Concretely, this means that the sum of `network_depth` and `downsample_images` must be less than 8, since 1280 pixels / 2^8 = 5.
 
 The training dataset `cosmic_tagging_train.h5` contains 43075 images.  The validation set `cosmic_tagging_val.h5`, specified by `--aux-file` and used to monitor overfitting during training, is 7362 images.  The final hold-out test set `cosmic_tagging_test.h5` contains 7449 images. To evaluate the accuracy of a trained model on the hold-out test set (after all training and tuning is complete), rerun the application in inference mode with `data.file=cosmic_tagging_test.h5`
 
@@ -151,14 +148,14 @@ There are several analysis metrics that are used to judge the quality of the tra
 
 ```
 @ARTICLE{10.3389/frai.2021.649917,
-AUTHOR={Acciarri, R.,  Adams, C., et al},   
-TITLE={Cosmic Ray Background Removal With Deep Neural Networks in SBND},      
-JOURNAL={Frontiers in Artificial Intelligence},      
-VOLUME={4},           
-YEAR={2021},      
-URL={https://www.frontiersin.org/articles/10.3389/frai.2021.649917},       
-DOI={10.3389/frai.2021.649917},        
-ISSN={2624-8212},   
+AUTHOR={Acciarri, R.,  Adams, C., et al},
+TITLE={Cosmic Ray Background Removal With Deep Neural Networks in SBND},
+JOURNAL={Frontiers in Artificial Intelligence},
+VOLUME={4},
+YEAR={2021},
+URL={https://www.frontiersin.org/articles/10.3389/frai.2021.649917},
+DOI={10.3389/frai.2021.649917},
+ISSN={2624-8212},
 
 }
 ```

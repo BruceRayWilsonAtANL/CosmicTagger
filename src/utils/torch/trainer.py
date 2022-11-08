@@ -13,6 +13,8 @@ import numpy
 
 
 import torch
+import poptorch
+
 try:
     import ipex
 except:
@@ -196,14 +198,14 @@ class torch_trainer(trainercore):
         # IMPORTANT: the scheduler in torch is a multiplicative factor,
         # but I've written it as learning rate itself.  So set the LR to 1.0
         if self.args.mode.optimizer.name == OptimizerKind.rmsprop:
-            self._opt = torch.optim.RMSprop(self._net.parameters(), 1.0, eps=1e-4)
+            self._opt = poptorch.optim.RMSprop(self._net.parameters(), 1.0, eps=1e-4)
         else:
-            self._opt = torch.optim.Adam(self._net.parameters(), 1.0)
+            self._opt = poptorch.optim.Adam(self._net.parameters(), 1.0)
 
         # For a regression in pytowrch 1.12.0:
         self._opt.param_groups[0]["capturable"] = False
 
-        self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
+        self.lr_scheduler = poptorch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
 
         if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
             self.scaler = torch.cuda.amp.GradScaler()
