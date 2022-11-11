@@ -2,15 +2,14 @@
 
 From Alex T
 
-```text
 I suggest the following steps to port the model, assuming it is PyTorch for training and inference:
-Make sure you can run it on CPU
-Set batch size to 1
-Create a training model with loss, and wrap it in poptorch.trainingModel (see documentation and tutorial) - this line seems a good place to start from: https://github.com/coreyjadams/CosmicTagger/blob/master/src/utils/torch/trainer.py#L742
-Wrap the inference model in  poptorch.inferenceModel (link)
-Run to see if it fits in memory
-If it does not: create a profile with the Graph Analyser (link), set precision to fp16/half (link), if needed run pipeline-parallel (link)
-```
+
+1. Make sure you can run it on CPU
+2. Set batch size to 1
+3. Create a training model with loss, and wrap it in poptorch.trainingModel (see documentation and tutorial) - this line seems a good place to start from: https://github.com/coreyjadams/CosmicTagger/blob/master/src/utils/torch/trainer.py#L742
+4. Wrap the inference model in  poptorch.inferenceModel (link)
+5. Run to see if it fits in memory
+6. If it does not: create a profile with the Graph Analyser (link), set precision to fp16/half (link), if needed run pipeline-parallel (link)
 
 This information is from https://github.com/graphcore/tutorials/blob/master/tutorials/pytorch/basics/walkthrough.ipynb.
 
