@@ -22,25 +22,3 @@ cd ~/DL/BruceRayWilsonAtANL/CosmicTagger
 
 python3 -m pip install scikit-build numpy
 python3 -m pip install -r requirements.txt
-
-
-
-#
-# From Habana
-#
-
-deactivate
-rm -rf ~/venvs/habana/venv_ct
-python3 -m venv --system-site-packages ~/venvs/habana/venv_ct
-source ~/venvs/habana/venv_ct/bin/activate
-cd ~/DL/BruceRayWilsonAtANL/CosmicTagger
-export PT_HPU_ENABLE_SYNAPSE_LAYOUT_HANDLING=false
-export HABANA_LOGS=~/.habana_logs
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu
-export MPI_ROOT=/usr/local/openmpi
-python3 -m pip install scikit-build numpy
-python3 -m pip install -r requirements.txt
-pip install --upgrade habana-tensorflow habana-horovod habana-torch-dataloader habana-torch-plugin
-
-
-
