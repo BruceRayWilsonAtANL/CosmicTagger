@@ -1,3 +1,5 @@
+#!/bin/bash
+# git checkout Graphcore
 for i in {1}
 do
     name=bfloat16_2x10_${i}
