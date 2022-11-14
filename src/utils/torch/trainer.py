@@ -761,6 +761,7 @@ class torch_trainer(trainercore):
                             logits_image, labels_image = self.forward_pass(minibatch_data)
 
                     verbose = False
+                    
 
                     # Compute the loss based on the logits
                     with self.timing_context("loss"):
