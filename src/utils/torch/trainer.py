@@ -216,7 +216,7 @@ class torch_trainer(trainercore):
         self._opt.param_groups[0]["capturable"] = False
 
         if self.args.run.compute_mode == ComputeMode.IPU:
-            self.lr_scheduler = poptorch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
+            self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
         else:
             self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
 
