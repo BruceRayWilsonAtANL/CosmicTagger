@@ -61,6 +61,20 @@ train_dataloader = poptorch.DataLoader(
 )
 ```
 
+> ***Note for IPU benchmarking***:
+>
+> The warmup time can be avoided by calling `training_model.compile(data,
+> labels)` before any other call to the model. If not, the first call will
+> include the compilation time, which can take few minutes.
+>
+> ```python
+> # Warmup
+> print("Compiling + Warmup ...")
+> training_model.compile(data, labels)
+> ```
+
+See tutorials/pytorch/efficient_data_loading/walkthrough.ipynb for more infomation
+
 ## Optimizer
 
 ```python

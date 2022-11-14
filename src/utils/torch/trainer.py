@@ -94,6 +94,8 @@ class torch_trainer(trainercore):
         else:
             self._net = self._raw_net
 
+        self._net = poptorch.trainingModel(self._net)
+
     def initialize(self, io_only=False):
 
         self._initialize_io(color=self._rank)
@@ -158,8 +160,10 @@ class torch_trainer(trainercore):
 
         if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
             with torch.cuda.amp.autocast():
+                # This is for GPU.  No conversion required.
                 self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
         else:
+            # TODOBRW
             self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
 
 
@@ -750,6 +754,10 @@ class torch_trainer(trainercore):
                             with torch.cuda.amp.autocast():
                                 logits_image, labels_image = self.forward_pass(minibatch_data)
                         else:
+                            # TODOBRW
+                            # Wrap the model in our PopTorch annotation wrapper.
+                            #poptorch_model = poptorch.trainingModel(model)
+
                             logits_image, labels_image = self.forward_pass(minibatch_data)
 
                     verbose = False
