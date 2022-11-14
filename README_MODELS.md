@@ -1,5 +1,7 @@
 # Model Changes
 
+20221114 The model runs on GC with the trainingModel wrapper.
+
 From Alex T
 
 I suggest the following steps to port the model, assuming it is PyTorch for training and inference:
