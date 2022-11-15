@@ -765,7 +765,7 @@ class torch_trainer(trainercore):
                             #poptorch_model = poptorch.trainingModel(model)
                             # Check IPU mode.
 
-                            logits_image, labels_image, loss = self.forward_pass(minibatch_data, self.loss_calculator, labels_image)
+                            logits_image, labels_image, loss = self.forward_pass(minibatch_data)
 
                     verbose = False
 
