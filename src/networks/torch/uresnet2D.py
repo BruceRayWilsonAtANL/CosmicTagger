@@ -538,7 +538,7 @@ class UResNet(torch.nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
-    def forward(self, input_tensor):
+    def forward(self, input_tensor, loss_calculator=None, labels_image=None):
 
 
         batch_size = input_tensor.shape[0]
@@ -569,4 +569,16 @@ class UResNet(torch.nn.Module):
         x = tuple( self.final_layer(_x) for _x in x )
         x = tuple( self.bottleneck(_x) for _x in x )
         # Might need to do some reshaping here
+
+        if loss_calculator is not None:
+            # Check IPU mode.
+            # If wrong assert
+
+            if self.training:
+                labels_image = labels_image.long()
+                labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+
+                loss = loss_calculator(labels_image, x)
+                return x, labels_image, loss
+
         return x

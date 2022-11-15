@@ -94,6 +94,7 @@ class torch_trainer(trainercore):
         else:
             self._net = self._raw_net
 
+        # Check for IPU mode.
         self._net = poptorch.trainingModel(self._net)
 
     def initialize(self, io_only=False):
@@ -691,12 +692,15 @@ class torch_trainer(trainercore):
             labels_image = minibatch_data['label']
             # Run a forward pass of the model on the input image:
             if net is None:
-                logits_image = self._net(minibatch_data['image'])
+                #logits_image = self._net(minibatch_data['image'])
+                # Check IPU mode.
+                logits_image, labels_image, loss = self._net(minibatch_data['image'], self.loss_calculator, labels_image)
             else:
                 logits_image = net(minibatch_data['image'])
 
-            labels_image = labels_image.long()
-            labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+            # Check if not IPU Mode.
+            #labels_image = labels_image.long()
+            #labels_image = torch.chunk(labels_image, chunks=3, dim=1)
             shape =  labels_image[0].shape
 
 
@@ -705,7 +709,9 @@ class torch_trainer(trainercore):
             # print numpy.unique(labels_image.cpu(), return_counts=True)
             labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
 
-        return logits_image, labels_image
+        # Check IPU Mode.
+        #return logits_image, labels_image
+        return logits_image, labels_image, loss
 
     def train_step(self):
 
@@ -757,15 +763,18 @@ class torch_trainer(trainercore):
                             # TODOBRW
                             # Wrap the model in our PopTorch annotation wrapper.
                             #poptorch_model = poptorch.trainingModel(model)
+                            # Check IPU mode.
 
-                            logits_image, labels_image = self.forward_pass(minibatch_data)
+                            logits_image, labels_image, loss = self.forward_pass(minibatch_data, self.loss_calculator, labels_image)
 
                     verbose = False
-                    
+
 
                     # Compute the loss based on the logits
+                    # Check IPU mode.
                     with self.timing_context("loss"):
-                        loss = self.loss_calculator(labels_image, logits_image)
+                        #loss = self.loss_calculator(labels_image, logits_image)
+                        loss = loss
 
 
                     # Compute the gradients for the network parameters:
