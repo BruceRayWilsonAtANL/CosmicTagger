@@ -19,11 +19,11 @@ done
 
 python3.8 bin/exec.py \
 mode=train \
-run.id=01 \
+run.id=02x10 \
 run.distributed=False \
 data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
 framework=torch \
 run.compute_mode=IPU \
-run.minibatch_size=1 \
-run.iterations=1 \
+run.minibatch_size=2 \
+run.iterations=10 \
 run.precision=3
