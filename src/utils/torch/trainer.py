@@ -701,13 +701,13 @@ class torch_trainer(trainercore):
             # Check if not IPU Mode.
             #labels_image = labels_image.long()
             #labels_image = torch.chunk(labels_image, chunks=3, dim=1)
-            shape =  labels_image[0].shape
+            #shape =  labels_image[0].shape
 
 
-            # weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
+            #### weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
 
-            # print numpy.unique(labels_image.cpu(), return_counts=True)
-            labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
+            #### print numpy.unique(labels_image.cpu(), return_counts=True)
+            #labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
 
         # Check IPU Mode.
         #return logits_image, labels_image
