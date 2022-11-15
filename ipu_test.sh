@@ -9,21 +9,9 @@ do
     run.distributed=False \
     data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
     framework=torch \
-    run.compute_mode=CPU \
-    run.minibatch_size=1 \
-    run.iterations=1 \
+    run.compute_mode=IPU \
+    run.minibatch_size=2 \
+    run.iterations=10 \
     run.precision=3 \
     > ${name}.log 2>&1 &
 done
-
-
-python3.8 bin/exec.py \
-mode=train \
-run.id=02x10 \
-run.distributed=False \
-data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
-framework=torch \
-run.compute_mode=IPU \
-run.minibatch_size=2 \
-run.iterations=10 \
-run.precision=3
