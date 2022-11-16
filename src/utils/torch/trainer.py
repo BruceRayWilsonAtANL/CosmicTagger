@@ -94,8 +94,8 @@ class torch_trainer(trainercore):
         else:
             self._net = self._raw_net
 
-        # Check for IPU mode.
-        self._net = poptorch.trainingModel(self._net)
+        if self.args.run.compute_mode == ComputeMode.IPU:
+            self._net = poptorch.trainingModel(self._net)
 
     def initialize(self, io_only=False):
 
@@ -692,28 +692,32 @@ class torch_trainer(trainercore):
             labels_image = minibatch_data['label']
             # Run a forward pass of the model on the input image:
             if net is None:
-                #logits_image = self._net(minibatch_data['image'])
-                # Check IPU mode.
-                logits_image, labels_image, loss = self._net(minibatch_data['image'], self.loss_calculator, labels_image)
+                if self.args.run.compute_mode == ComputeMode.IPU:
+                    logits_image, labels_image, loss = self._net(minibatch_data['image'], self.loss_calculator, labels_image)
+                else:
+                    logits_image = self._net(minibatch_data['image'])
             else:
-                #logits_image = net(minibatch_data['image'])
-                # Check IPU mode.
-                logits_image, labels_image, loss = net(minibatch_data['image'], self.loss_calculator, labels_image)
+                if self.args.run.compute_mode == ComputeMode.IPU:
+                    logits_image, labels_image, loss = net(minibatch_data['image'], self.loss_calculator, labels_image)
+                else:
+                    logits_image = net(minibatch_data['image'])
 
-            # Check if not IPU Mode.
-            #labels_image = labels_image.long()
-            #labels_image = torch.chunk(labels_image, chunks=3, dim=1)
-            #shape =  labels_image[0].shape
+            if self.args.run.compute_mode != ComputeMode.IPU:
+                labels_image = labels_image.long()
+                labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+                shape =  labels_image[0].shape
 
 
-            #### weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
+                #### weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
 
-            #### print numpy.unique(labels_image.cpu(), return_counts=True)
-            #labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
+                #### print numpy.unique(labels_image.cpu(), return_counts=True)
+                labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
 
-        # Check IPU Mode.
-        #return logits_image, labels_image
-        return logits_image, labels_image, loss
+        if self.args.run.compute_mode == ComputeMode.IPU:
+            return logits_image, labels_image, loss
+
+        return logits_image, labels_image
+
 
     def train_step(self):
 
@@ -765,18 +769,20 @@ class torch_trainer(trainercore):
                             # TODOBRW
                             # Wrap the model in our PopTorch annotation wrapper.
                             #poptorch_model = poptorch.trainingModel(model)
-                            # Check IPU mode.
-
-                            logits_image, labels_image, loss = self.forward_pass(minibatch_data)
+                            if self.args.run.compute_mode == ComputeMode.IPU:
+                                logits_image, labels_image, loss = self.forward_pass(minibatch_data)
+                            else:
+                                logits_image, labels_image = self.forward_pass(minibatch_data)
 
                     verbose = False
 
 
                     # Compute the loss based on the logits
-                    # Check IPU mode.
                     with self.timing_context("loss"):
-                        #loss = self.loss_calculator(labels_image, logits_image)
-                        loss = loss
+                        if self.args.run.compute_mode == ComputeMode.IPU:
+                            loss = loss
+                        else:
+                            loss = self.loss_calculator(labels_image, logits_image)
 
 
                     # Compute the gradients for the network parameters:
@@ -888,14 +894,15 @@ class torch_trainer(trainercore):
                 with torch.cuda.amp.autocast():
                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
             else:
-                #logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
-                # Check IPU mode.
-                print(f'\n\ttype(val_net): {type(val_net)}')
-                logits_image, labels_image, loss = self.forward_pass(minibatch_data, net=val_net)
+                if self.args.run.compute_mode == ComputeMode.IPU:
+                    print(f'\n\ttype(val_net): {type(val_net)}')
+                    logits_image, labels_image, loss = self.forward_pass(minibatch_data, net=val_net)
+                else:
+                    logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
 
             # Compute the loss based on the logits
-            # Check IPU mode.
-            #loss = self.loss_calculator(labels_image, logits_image)
+            if self.args.run.compute_mode != ComputeMode.IPU:
+                loss = self.loss_calculator(labels_image, logits_image)
 
             # Compute any necessary metrics:
             metrics = self._compute_metrics(logits_image, labels_image, loss)
