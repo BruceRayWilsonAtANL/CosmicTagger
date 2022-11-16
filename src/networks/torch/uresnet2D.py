@@ -574,13 +574,12 @@ class UResNet(torch.nn.Module):
             # Check IPU mode.
             # If wrong assert
 
-            if self.training:
-                labels_image = labels_image.long()
-                labels_image = torch.chunk(labels_image, chunks=3, dim=1)
-                shape =  labels_image[0].shape
-                labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
+            labels_image = labels_image.long()
+            labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+            shape =  labels_image[0].shape
+            labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
 
-                loss = loss_calculator(labels_image, x)
-                return x, labels_image, loss
+            loss = loss_calculator(labels_image, x)
+            return x, labels_image, loss
 
         return x
