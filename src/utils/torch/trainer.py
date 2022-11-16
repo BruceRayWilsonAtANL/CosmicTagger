@@ -890,7 +890,7 @@ class torch_trainer(trainercore):
             else:
                 #logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
                 # Check IPU mode.
-                print('\n\ttype(val_net): {type(val_net}')
+                print(f'\n\ttype(val_net): {type(val_net)}')
                 logits_image, labels_image, loss = self.forward_pass(minibatch_data, net=val_net)
 
             # Compute the loss based on the logits
