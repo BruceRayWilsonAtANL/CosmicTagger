@@ -696,8 +696,9 @@ class torch_trainer(trainercore):
                 # Check IPU mode.
                 logits_image, labels_image, loss = self._net(minibatch_data['image'], self.loss_calculator, labels_image)
             else:
-                assert(True == False)
-                logits_image = net(minibatch_data['image'])
+                #logits_image = net(minibatch_data['image'])
+                # Check IPU mode.
+                logits_image, labels_image, loss = net(minibatch_data['image'], self.loss_calculator, labels_image)
 
             # Check if not IPU Mode.
             #labels_image = labels_image.long()
