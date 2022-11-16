@@ -888,10 +888,13 @@ class torch_trainer(trainercore):
                 with torch.cuda.amp.autocast():
                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
             else:
-                logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
+                #logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
+                # Check IPU mode.
+                logits_image, labels_image, loss = self.forward_pass(minibatch_data, net=val_net)
 
             # Compute the loss based on the logits
-            loss = self.loss_calculator(labels_image, logits_image)
+            # Check IPU mode.
+            #loss = self.loss_calculator(labels_image, logits_image)
 
             # Compute any necessary metrics:
             metrics = self._compute_metrics(logits_image, labels_image, loss)
