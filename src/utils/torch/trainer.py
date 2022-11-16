@@ -95,6 +95,7 @@ class torch_trainer(trainercore):
             self._net = self._raw_net
 
         if self.args.run.compute_mode == ComputeMode.IPU:
+            input("poptorch.trainingModel: Press <Enter> to continue...")
             self._net = poptorch.trainingModel(self._net)
 
     def initialize(self, io_only=False):
