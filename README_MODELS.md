@@ -22,7 +22,7 @@ This information is from https://github.com/graphcore/tutorials/blob/master/tuto
 
 
 80f4dd5cbf891058b3eedee0f398fb2329d0ca90
-git diff 80f4dd5cb^..9e053833acaa > 
+git diff 80f4dd5cb^..9e053833acaa > log.diff
 
 ## Config.py
 

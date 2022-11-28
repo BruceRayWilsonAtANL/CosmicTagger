@@ -3,13 +3,13 @@
 #set -e
 source /lambda_stor/software/graphcore/poplar_sdk/3.0.0/popart-ubuntu_20_04-3.0.0+5691-1e179b3b85/enable.sh
 source /lambda_stor/software/graphcore/poplar_sdk/3.0.0/poplar-ubuntu_20_04-3.0.0+5691-1e179b3b85/enable.sh
-mkdir -p ~/venvs/graphcore
-rm -rf ~/venvs/graphcore/cosmictagger_env
-virtualenv ~/venvs/graphcore/cosmictagger_env
+#mkdir -p ~/venvs/graphcore
+#rm -rf ~/venvs/graphcore/cosmictagger_env
+#virtualenv ~/venvs/graphcore/cosmictagger_env
 source ~/venvs/graphcore/cosmictagger_env/bin/activate
 POPLAR_SDK_ROOT=/lambda_stor/software/graphcore/poplar_sdk/3.0.0
 export POPLAR_SDK_ROOT=$POPLAR_SDK_ROOT
-pip install $POPLAR_SDK_ROOT/poptorch-3.0.0+86945_163b7ce462_ubuntu_20_04-cp38-cp38-linux_x86_64.whl
+#pip install $POPLAR_SDK_ROOT/poptorch-3.0.0+86945_163b7ce462_ubuntu_20_04-cp38-cp38-linux_x86_64.whl
 #mkdir ~/tmp
 export TF_POPLAR_FLAGS=--executable_cache_path=~/tmp
 export POPTORCH_CACHE_DIR=~/tmp

@@ -580,6 +580,7 @@ class UResNet(torch.nn.Module):
             labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
 
             loss = loss_calculator(labels_image, x)
-            return x, labels_image, loss
+            import poptorch
+            loss = poptorch.identity_loss(loss , reduction="mean")            return x, labels_image, loss
 
         return x

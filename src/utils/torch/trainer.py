@@ -95,8 +95,9 @@ class torch_trainer(trainercore):
             self._net = self._raw_net
 
         if self.args.run.compute_mode == ComputeMode.IPU:
-            input("poptorch.trainingModel: Press <Enter> to continue...")
-            self._net = poptorch.trainingModel(self._net)
+            # input("poptorch.trainingModel: Press <Enter> to continue...")
+            opts = poptorch.Options()
+            self._net = poptorch.trainingModel(self._net, opts, optimizer=torch.optim.SGD(self._net.parameters(), lr=1e-3))
 
     def initialize(self, io_only=False):
 
@@ -112,7 +113,7 @@ class torch_trainer(trainercore):
             self.init_network()
 
 
-            self._net = self._net.to(self.default_device())
+            #self._net = self._net.to(self.default_device())
 
             # self._net.to(device)
 
