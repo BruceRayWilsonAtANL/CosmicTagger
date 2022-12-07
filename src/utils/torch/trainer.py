@@ -695,11 +695,13 @@ class torch_trainer(trainercore):
             if net is None:
                 if self.args.run.compute_mode == ComputeMode.IPU:
                     logits_image, labels_image, loss = self._net(minibatch_data['image'], self.loss_calculator, labels_image)
+                    return logits_image, labels_image, loss
                 else:
                     logits_image = self._net(minibatch_data['image'])
             else:
                 if self.args.run.compute_mode == ComputeMode.IPU:
                     logits_image, labels_image, loss = net(minibatch_data['image'], self.loss_calculator, labels_image)
+                    return logits_image, labels_image, loss
                 else:
                     logits_image = net(minibatch_data['image'])
 
