@@ -694,25 +694,27 @@ class torch_trainer(trainercore):
             if net is None:
                 if self.args.run.compute_mode == ComputeMode.IPU:
                     logits_image, labels_image, loss = self._net(minibatch_data['image'], self.loss_calculator, labels_image)
-                    return logits_image, labels_image, loss
                 else:
                     logits_image = self._net(minibatch_data['image'])
             else:
-                if self.args.run.compute_mode == ComputeMode.IPU and self.args.mode.name != ModeKind.inference:
+                if self.args.run.compute_mode == ComputeMode.IPU:
                     logits_image, labels_image, loss = net(minibatch_data['image'], self.loss_calculator, labels_image)
-                    return logits_image, labels_image, loss
                 else:
                     logits_image = net(minibatch_data['image'])
 
-            labels_image = labels_image.long()
-            labels_image = torch.chunk(labels_image, chunks=3, dim=1)
-            shape =  labels_image[0].shape
+            if self.args.run.compute_mode != ComputeMode.IPU:
+                labels_image = labels_image.long()
+                labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+                shape =  labels_image[0].shape
 
 
             # weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
 
             # print numpy.unique(labels_image.cpu(), return_counts=True)
             labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
+
+        if self.args.run.compute_mode == ComputeMode.IPU:
+            return logits_image, labels_image, loss
 
         return logits_image, labels_image
 
