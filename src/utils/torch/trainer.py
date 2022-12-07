@@ -95,8 +95,11 @@ class torch_trainer(trainercore):
             self._net = self._raw_net
 
         if self.args.run.compute_mode == ComputeMode.IPU:
-            input("poptorch.trainingModel: Press <Enter> to continue...")
-            self._net = poptorch.trainingModel(self._net)
+            if self.is_training():
+                opts = poptorch.Options()
+                self._net = poptorch.trainingModel(self._net, opts, optimizer=torch.optim.SGD(self._net.parameters(), lr=1e-3))
+            else:
+                self._net = poptorch.inferenceModel(self._net)
 
     def initialize(self, io_only=False):
 
@@ -165,7 +168,6 @@ class torch_trainer(trainercore):
                 # This is for GPU.  No conversion required.
                 self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
         else:
-            # TODOBRW
             self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
 
 
@@ -217,10 +219,7 @@ class torch_trainer(trainercore):
         # For a regression in pytowrch 1.12.0:
         self._opt.param_groups[0]["capturable"] = False
 
-        if self.args.run.compute_mode == ComputeMode.IPU:
-            self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
-        else:
-            self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
+        self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
 
         if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
             self.scaler = torch.cuda.amp.GradScaler()
@@ -636,6 +635,8 @@ class torch_trainer(trainercore):
             device = torch.device("xpu")
         # elif self.args.run.compute_mode == "DPCPP":
         #     device = torch.device("dpcpp")
+        elif self.args.run.compute_mode == ComputeMode.IPU:
+            device = torch.device("ipu")
         else:
             device = torch.device('cpu')
         return device
@@ -686,7 +687,6 @@ class torch_trainer(trainercore):
 
     def forward_pass(self, minibatch_data, net=None):
 
-
         with self.default_device_context():
             minibatch_data = self.to_torch(minibatch_data)
 
@@ -695,27 +695,25 @@ class torch_trainer(trainercore):
             if net is None:
                 if self.args.run.compute_mode == ComputeMode.IPU:
                     logits_image, labels_image, loss = self._net(minibatch_data['image'], self.loss_calculator, labels_image)
+                    return logits_image, labels_image, loss
                 else:
                     logits_image = self._net(minibatch_data['image'])
             else:
-                if self.args.run.compute_mode == ComputeMode.IPU:
+                if self.args.run.compute_mode == ComputeMode.IPU and self.args.mode.name != ModeKind.inference:
                     logits_image, labels_image, loss = net(minibatch_data['image'], self.loss_calculator, labels_image)
+                    return logits_image, labels_image, loss
                 else:
                     logits_image = net(minibatch_data['image'])
 
-            if self.args.run.compute_mode != ComputeMode.IPU:
-                labels_image = labels_image.long()
-                labels_image = torch.chunk(labels_image, chunks=3, dim=1)
-                shape =  labels_image[0].shape
+            labels_image = labels_image.long()
+            labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+            shape =  labels_image[0].shape
 
 
-                #### weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
+            # weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
 
-                #### print numpy.unique(labels_image.cpu(), return_counts=True)
-                labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
-
-        if self.args.run.compute_mode == ComputeMode.IPU:
-            return logits_image, labels_image, loss
+            # print numpy.unique(labels_image.cpu(), return_counts=True)
+            labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
 
         return logits_image, labels_image
 
@@ -767,9 +765,6 @@ class torch_trainer(trainercore):
                             with torch.cuda.amp.autocast():
                                 logits_image, labels_image = self.forward_pass(minibatch_data)
                         else:
-                            # TODOBRW
-                            # Wrap the model in our PopTorch annotation wrapper.
-                            #poptorch_model = poptorch.trainingModel(model)
                             if self.args.run.compute_mode == ComputeMode.IPU:
                                 logits_image, labels_image, loss = self.forward_pass(minibatch_data)
                             else:
@@ -896,14 +891,12 @@ class torch_trainer(trainercore):
                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
             else:
                 if self.args.run.compute_mode == ComputeMode.IPU:
-                    print(f'\n\ttype(val_net): {type(val_net)}')
                     logits_image, labels_image, loss = self.forward_pass(minibatch_data, net=val_net)
                 else:
                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
 
-            # Compute the loss based on the logits
-            if self.args.run.compute_mode != ComputeMode.IPU:
-                loss = self.loss_calculator(labels_image, logits_image)
+                    # Compute the loss based on the logits
+                    loss = self.loss_calculator(labels_image, logits_image)
 
             # Compute any necessary metrics:
             metrics = self._compute_metrics(logits_image, labels_image, loss)
