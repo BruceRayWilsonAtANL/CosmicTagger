@@ -218,10 +218,7 @@ class torch_trainer(trainercore):
         # For a regression in pytowrch 1.12.0:
         self._opt.param_groups[0]["capturable"] = False
 
-        if self.args.run.compute_mode == ComputeMode.IPU:
-            self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
-        else:
-            self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
+        self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
 
         if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
             self.scaler = torch.cuda.amp.GradScaler()
@@ -768,9 +765,6 @@ class torch_trainer(trainercore):
                             with torch.cuda.amp.autocast():
                                 logits_image, labels_image = self.forward_pass(minibatch_data)
                         else:
-                            # TODOBRW
-                            # Wrap the model in our PopTorch annotation wrapper.
-                            #poptorch_model = poptorch.trainingModel(model)
                             if self.args.run.compute_mode == ComputeMode.IPU:
                                 logits_image, labels_image, loss = self.forward_pass(minibatch_data)
                             else:
@@ -897,7 +891,6 @@ class torch_trainer(trainercore):
                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
             else:
                 if self.args.run.compute_mode == ComputeMode.IPU:
-                    print(f'\n\ttype(val_net): {type(val_net)}')
                     logits_image, labels_image, loss = self.forward_pass(minibatch_data, net=val_net)
                 else:
                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
