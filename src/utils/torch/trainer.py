@@ -115,7 +115,8 @@ class torch_trainer(trainercore):
             self.init_network()
 
 
-            self._net = self._net.to(self.default_device())
+            if self.args.run.compute_mode != ComputeMode.IPU:
+                self._net = self._net.to(self.default_device())
 
             # self._net.to(device)
 
@@ -635,8 +636,6 @@ class torch_trainer(trainercore):
             device = torch.device("xpu")
         # elif self.args.run.compute_mode == "DPCPP":
         #     device = torch.device("dpcpp")
-        elif self.args.run.compute_mode == ComputeMode.IPU:
-            device = torch.device("ipu")
         else:
             device = torch.device('cpu')
         return device
