@@ -98,6 +98,8 @@ class torch_trainer(trainercore):
             if self.is_training():
                 opts = poptorch.Options()
                 self._net = poptorch.trainingModel(self._net, opts, optimizer=torch.optim.SGD(self._net.parameters(), lr=1e-3))
+            else:
+                self._net = poptorch.inferenceModel(self._net)
 
     def initialize(self, io_only=False):
 
@@ -895,9 +897,8 @@ class torch_trainer(trainercore):
                 else:
                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
 
-            # Compute the loss based on the logits
-            if self.args.run.compute_mode != ComputeMode.IPU:
-                loss = self.loss_calculator(labels_image, logits_image)
+                    # Compute the loss based on the logits
+                    loss = self.loss_calculator(labels_image, logits_image)
 
             # Compute any necessary metrics:
             metrics = self._compute_metrics(logits_image, labels_image, loss)
