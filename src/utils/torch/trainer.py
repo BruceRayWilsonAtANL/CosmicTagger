@@ -703,10 +703,9 @@ class torch_trainer(trainercore):
                 else:
                     logits_image = net(minibatch_data['image'])
 
-            if self.args.run.compute_mode != ComputeMode.IPU:
-                labels_image = labels_image.long()
-                labels_image = torch.chunk(labels_image, chunks=3, dim=1)
-                shape =  labels_image[0].shape
+            labels_image = labels_image.long()
+            labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+            shape =  labels_image[0].shape
 
 
             # weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
@@ -891,6 +890,9 @@ class torch_trainer(trainercore):
             if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
                 with torch.cuda.amp.autocast():
                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
+
+                    # Compute the loss based on the logits
+                    loss = self.loss_calculator(labels_image, logits_image)
             else:
                 if self.args.run.compute_mode == ComputeMode.IPU:
                     logits_image, labels_image, loss = self.forward_pass(minibatch_data, net=val_net)

@@ -11,7 +11,7 @@ I suggest the following steps to port the model, assuming it is PyTorch for trai
 3. (Done) Create a training model with loss, and wrap it in poptorch.trainingModel, see [documentation](https://docs.graphcore.ai/projects/poptorch-user-guide/en/latest/overview.html#poptorch-trainingmodel) and [tutorial](https://github.com/graphcore/tutorials/tree/master/tutorials/pytorch/basics#build-the-model) - this line seems a good place to start from: [trainer.py](https://github.com/coreyjadams/CosmicTagger/blob/master/src/utils/torch/trainer.py#L742)
 4. Wrap the inference model in  poptorch.inferenceModel (link)
 5. Run to see if it fits in memory
-6. If it does not: create a profile with the Graph Analyser (link), set precision to fp16/half (link), if needed run pipeline-parallel (link)
+6. If it does not: create a profile with the [Graph Analyser](https://docs.graphcore.ai/projects/graph-analyser-userguide/en/latest/user-guide.html#capturing-ipu-reports), set precision to [fp16/half](https://github.com/graphcore/tutorials/tree/master/tutorials/pytorch/mixed_precision), if needed run [pipeline-parallel](https://github.com/graphcore/tutorials/tree/master/tutorials/pytorch/pipelining)
 
 This information is from https://github.com/graphcore/tutorials/blob/master/tutorials/pytorch/basics/walkthrough.ipynb.
 
