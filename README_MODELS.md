@@ -15,15 +15,6 @@ I suggest the following steps to port the model, assuming it is PyTorch for trai
 
 This information is from https://github.com/graphcore/tutorials/blob/master/tutorials/pytorch/basics/walkthrough.ipynb.
 
-
-
-
-
-
-
-80f4dd5cbf891058b3eedee0f398fb2329d0ca90
-git diff 80f4dd5cb^..9e053833acaa > log.diff
-
 ## Config.py
 
 ```python
