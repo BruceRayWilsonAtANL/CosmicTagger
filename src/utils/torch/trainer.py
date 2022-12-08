@@ -168,7 +168,6 @@ class torch_trainer(trainercore):
                 # This is for GPU.  No conversion required.
                 self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
         else:
-            # TODOBRW
             self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
 
 
@@ -686,7 +685,6 @@ class torch_trainer(trainercore):
 
     def forward_pass(self, minibatch_data, net=None):
 
-
         with self.default_device_context():
             minibatch_data = self.to_torch(minibatch_data)
 
@@ -699,25 +697,21 @@ class torch_trainer(trainercore):
                 else:
                     logits_image = self._net(minibatch_data['image'])
             else:
-                if self.args.run.compute_mode == ComputeMode.IPU:
+                if self.args.run.compute_mode == ComputeMode.IPU and self.args.mode.name != ModeKind.inference:
                     logits_image, labels_image, loss = net(minibatch_data['image'], self.loss_calculator, labels_image)
                     return logits_image, labels_image, loss
                 else:
                     logits_image = net(minibatch_data['image'])
 
-            if self.args.run.compute_mode != ComputeMode.IPU:
-                labels_image = labels_image.long()
-                labels_image = torch.chunk(labels_image, chunks=3, dim=1)
-                shape =  labels_image[0].shape
+            labels_image = labels_image.long()
+            labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+            shape =  labels_image[0].shape
 
 
-                #### weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
+            # weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
 
-                #### print numpy.unique(labels_image.cpu(), return_counts=True)
-                labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
-
-        if self.args.run.compute_mode == ComputeMode.IPU:
-            return logits_image, labels_image, loss
+            # print numpy.unique(labels_image.cpu(), return_counts=True)
+            labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
 
         return logits_image, labels_image
 
