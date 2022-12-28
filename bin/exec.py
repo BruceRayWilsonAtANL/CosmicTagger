@@ -23,7 +23,7 @@ network_dir = os.path.dirname(os.path.abspath(__file__))
 network_dir = os.path.dirname(network_dir)
 sys.path.insert(0,network_dir)
 
-from src.config import Config
+from src.config import Config, ComputeMode
 from src.config.mode import ModeKind
 
 class exec(object):
@@ -42,6 +42,12 @@ class exec(object):
         self.configure_logger(rank)
 
         self.validate_arguments()
+
+        # Print the command line args to the log file:
+        logger = logging.getLogger()
+        logger.info("Dumping launch arguments.")
+        logger.info(sys.argv)
+
 
         if config.mode.name == ModeKind.train:
             self.train()
@@ -241,10 +247,17 @@ class exec(object):
         if self.args.framework.name == "torch":
             # In torch, only option is channels first:
             if self.args.data.data_format == DataFormatKind.channels_last:
-                logger.warning("Torch requires channels_first, switching automatically")
+                if self.args.run.compute_mode == ComputeMode.GPU:
+                    logger.warning("CUDA Torch requires channels_first, switching automatically")
                 self.args.data.data_format = DataFormatKind.channels_first
 
+        elif self.args.framework.name == "tensorflow":
+            if self.args.mode.name == ModeKind.train:
+                if self.args.mode.quantization_aware:
+                    logger.error("Quantization aware training not implemented in tensorflow.")
+
         self.args.network.data_format = self.args.data.data_format.name
+
 
 
 
@@ -258,5 +271,5 @@ if __name__ == '__main__':
     #  Is this good practice?  No.  But hydra doesn't give a great alternative
     import sys
     if "--help" not in sys.argv and "--hydra-help" not in sys.argv:
-        sys.argv += ['hydra.run.dir=.', 'hydra/job_logging=disabled']
+        sys.argv += ['hydra/job_logging=disabled']
     main()

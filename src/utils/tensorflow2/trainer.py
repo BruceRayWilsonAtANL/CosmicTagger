@@ -38,7 +38,6 @@ class tf_trainer(trainercore):
 
     def __init__(self, args):
         trainercore.__init__(self, args)
-        self._rank = None
 
     def local_batch_size(self):
         return self.args.run.minibatch_size
