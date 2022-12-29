@@ -249,7 +249,7 @@ class exec(object):
             if self.args.data.data_format == DataFormatKind.channels_last:
                 if self.args.run.compute_mode == ComputeMode.GPU:
                     logger.warning("CUDA Torch requires channels_first, switching automatically")
-                self.args.data.data_format = DataFormatKind.channels_first
+                    self.args.data.data_format = DataFormatKind.channels_first
 
         elif self.args.framework.name == "tensorflow":
             if self.args.mode.name == ModeKind.train:
