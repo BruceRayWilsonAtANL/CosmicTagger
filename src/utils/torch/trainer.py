@@ -16,7 +16,7 @@ import torch
 import poptorch
 
 try:
-    import ipex
+    import intel_extension_for_pytorch as ipex
 except:
     pass
 
@@ -47,7 +47,7 @@ try:
 except:
     from tensorboardX import SummaryWriter
 
-from src.config import ComputeMode, Precision, ConvMode, ModeKind
+from src.config import ComputeMode, Precision, ConvMode, ModeKind, DataFormatKind
 
 class torch_trainer(trainercore):
     '''
@@ -75,7 +75,9 @@ class torch_trainer(trainercore):
 
             self._raw_net = UResNet3D(self.args.network, self.larcv_fetcher.image_size())
 
-
+        if self.args.data.data_format == DataFormatKind.channels_last:
+            if self.args.run.compute_mode == ComputeMode.XPU:
+                self._raw_net = self._raw_net.to("xpu").to(memory_format=torch.channels_last)
 
 
         if self.is_training():
@@ -165,7 +167,6 @@ class torch_trainer(trainercore):
 
         if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
             with torch.cuda.amp.autocast():
-                # This is for GPU.  No conversion required.
                 self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
         else:
             self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
@@ -679,11 +680,16 @@ class torch_trainer(trainercore):
             if self.args.run.precision == Precision.mixed:
                 minibatch_data["image"] = minibatch_data["image"].half()
 
+            if self.args.run.compute_mode == ComputeMode.XPU:
+                if self.args.data.data_format == DataFormatKind.channels_last:
+                    minibatch_data["image"] == minibatch_data['image'].to(memory_format=torch.channels_last)
+                    minibatch_data["label"] == minibatch_data['label'].to(memory_format=torch.channels_last)
 
         return minibatch_data
 
 
     def forward_pass(self, minibatch_data, net=None):
+
 
         with self.default_device_context():
             minibatch_data = self.to_torch(minibatch_data)
@@ -772,7 +778,6 @@ class torch_trainer(trainercore):
                                 logits_image, labels_image = self.forward_pass(minibatch_data)
 
                     verbose = False
-
 
                     # Compute the loss based on the logits
                     with self.timing_context("loss"):
