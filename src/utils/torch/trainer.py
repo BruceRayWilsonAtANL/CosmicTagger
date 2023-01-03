@@ -472,9 +472,9 @@ class torch_trainer(trainercore):
 
             # Build up a string for logging:
             if self._log_keys != []:
-                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key]) for key in self._log_keys])
+                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key].item()) for key in self._log_keys])
             else:
-                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key]) for key in metrics])
+                s = ", ".join(["{0}: {1:.3}".format(key, metrics[key].item()) for key in metrics])
 
             time_string = []
 
