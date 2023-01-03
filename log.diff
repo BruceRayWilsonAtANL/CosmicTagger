@@ -1,0 +1,526 @@
+diff --git a/README.md b/README.md
+index 8bf2e39..80d1eb5 100644
+--- a/README.md
++++ b/README.md
+@@ -2,11 +2,8 @@
+ 
+ 
+ 
+-# Neutrino and Cosmic Tagging with UNet
+-
+ This repository contains models and training utilities to train convolutional networks to separate cosmic pixels, background pixels, and neutrino pixels in a neutrinos dataset.  There are several variations. A detailed description of the code can be found in:
+-* [*Cosmic Background Removal with Deep Neural Networks in SBND*](https://arxiv.org/abs/2012.01301) 
+-
++* [*Cosmic Background Removal with Deep Neural Networks in SBND*](https://www.frontiersin.org/articles/10.3389/frai.2021.649917/full)
+ 
+ This network is implemented in both PyTorch and TensorFlow.  To select between the networks, you can use the `--framework` parameter.  It accepts either `tensorflow` or `torch`.  The model is available in a development version with sparse convolutions in the `torch` framework.
+ 
+@@ -19,7 +16,7 @@ conda create -n cosmic_tagger python==3.7
+ conda install cmake hdf5 scikit-build numpy
+ ```
+ 
+-As of April 2021, the version of `larcv3` on PyPI (v3.3.3) does not work with CosmicTagger. A version corresponding to commit `c73936e` or later is currently necessary. To build `larcv3` from source, 
++As of April 2021, the version of `larcv3` on PyPI (v3.3.3) does not work with CosmicTagger. A version corresponding to commit `c73936e` or later is currently necessary. To build `larcv3` from source,
+ ```
+ git clone https://github.com/DeepLearnPhysics/larcv3.git
+ cd larcv3
+@@ -27,7 +24,7 @@ git submodule update --init
+ pip install -e .
+ ```
+ 
+-Then, in the CosmicTagger directory, 
++Then, in the CosmicTagger directory,
+ ```
+ pip install -r requirements.txt
+ ```
+@@ -102,7 +99,7 @@ Data may be downloaded from Globus  [here](https://app.globus.org/file-manager?o
+ 
+ The data for this network is in larcv3 format (https://github.com/DeepLearnPhysics/larcv3).  Currently, data is available in full resolution (HxW == 1280x2048) of 3 images per training sample.  This image size is large, and the network is large, so to accomodate older hardware or smaller GPUs this can be run with a reduced image size.  The datasets are kept at full resolution but a downsampling operation is applied prior to feeding images and labels to the network.
+ 
+-The UNet design is symmetric and does downsampling/upsampling by factors of 2.  So, in order to preserve the proper sizes during the upsampling sets, it's important that the smallest resolution image reached by the network does not contain a dimension with an odd number of pixels.  Concretely, this means that the sum of `network_depth` and `downsample_images` must be less than 8, since 1280 pixels / 2^8 = 5. 
++The UNet design is symmetric and does downsampling/upsampling by factors of 2.  So, in order to preserve the proper sizes during the upsampling sets, it's important that the smallest resolution image reached by the network does not contain a dimension with an odd number of pixels.  Concretely, this means that the sum of `network_depth` and `downsample_images` must be less than 8, since 1280 pixels / 2^8 = 5.
+ 
+ The training dataset `cosmic_tagging_train.h5` contains 43075 images.  The validation set `cosmic_tagging_val.h5`, specified by `--aux-file` and used to monitor overfitting during training, is 7362 images.  The final hold-out test set `cosmic_tagging_test.h5` contains 7449 images. To evaluate the accuracy of a trained model on the hold-out test set (after all training and tuning is complete), rerun the application in inference mode with `data.file=cosmic_tagging_test.h5`
+ 
+@@ -150,13 +147,16 @@ There are several analysis metrics that are used to judge the quality of the tra
+ # Citations
+ 
+ ```
+-@misc{sbndcollaboration2021cosmic,
+-      title={Cosmic Background Removal with Deep Neural Networks in SBND}, 
+-      author={SBND Collaboration and R. Acciarri and C. Adams and C. Andreopoulos and J. Asaadi and M. Babicz and C. Backhouse and W. Badgett and L. Bagby and D. Barker and V. Basque and M. and C. and Q. Bazetto and M. Betancourt and A. Bhanderi and A. Bhat and C. Bonifazi and D. Brailsford and A. and G. Brandt and T. Brooks and M. and F. Carneiro and Y. Chen and H. Chen and G. Chisnall and J. and I. Crespo-Anadón and E. Cristaldo and C. Cuesta and I. and L. de Icaza Astiz and A. De Roeck and G. de Sá Pereira and M. Del Tutto and V. Di Benedetto and A. Ereditato and J. and J. Evans and A. and C. Ezeribe and R. and S. Fitzpatrick and B. and T. Fleming and W. Foreman and D. Franco and I. Furic and A. and P. Furmanski and S. Gao and D. Garcia-Gamez and H. Frandini and G. Ge and I. Gil-Botella and S. Gollapinni and O. Goodwin and P. Green and W. and C. Griffith and R. Guenette and P. Guzowski and T. Ham and J. Henzerling and A. Holin and B. Howard and R. and S. Jones and D. Kalra and G. Karagiorgi and L. Kashur and W. Ketchum and M. and J. Kim and V. and A. Kudryavtsev and J. Larkin and H. Lay and I. Lepetic and B. and R. Littlejohn and W. and C. Louis and A. and A. Machado and M. Malek and D. Mardsen and C. Mariani and F. Marinho and A. Mastbaum and K. Mavrokoridis and N. McConkey and V. Meddage and D. and P. Méndez and T. Mettler and K. Mistry and A. Mogan and J. Molina and M. Mooney and L. Mora and C. and A. Moura and J. Mousseau and A. Navrer-Agasson and F. and J. Nicolas-Arnaldos and J. and A. Nowak and O. Palamara and V. Pandey and J. Pater and L. Paulucci and V. and L. Pimentel and F. Psihas and G. Putnam and X. Qian and E. Raguzin and H. Ray and M. Reggiani-Guzzo and D. Rivera and M. Roda and M. Ross-Lonergan and G. Scanavini and A. Scarff and D. and W. Schmitz and A. Schukraft and E. Segreto and M. Soares Nunes and M. Soderberg and S. Söldner-Rembold and J. Spitz and N. and J. and C. Spooner and M. Stancari and G. and V. Stenico and A. Szelc and W. Tang and J. Tena Vidal and D. Torretta and M. Toups and C. Touramanis and M. Tripathi and S. Tufanli and E. Tyley and G. and A. Valdiviesso and E. Worcester and M. Worcester and G. Yarbrough and J. Yu and B. Zamorano and J. Zennamo and A. Zglam},
+-      year={2021},
+-      eprint={2012.01301},
+-      archivePrefix={arXiv},
+-      primaryClass={physics.data-an}
++@ARTICLE{10.3389/frai.2021.649917,
++AUTHOR={Acciarri, R.,  Adams, C., et al},
++TITLE={Cosmic Ray Background Removal With Deep Neural Networks in SBND},
++JOURNAL={Frontiers in Artificial Intelligence},
++VOLUME={4},
++YEAR={2021},
++URL={https://www.frontiersin.org/articles/10.3389/frai.2021.649917},
++DOI={10.3389/frai.2021.649917},
++ISSN={2624-8212},
++
+ }
+ ```
+ 
+diff --git a/README_GRAPHCORE.md b/README_GRAPHCORE.md
+new file mode 100644
+index 0000000..afcb8e2
+--- /dev/null
++++ b/README_GRAPHCORE.md
+@@ -0,0 +1,41 @@
++# CosmicTagger on Graphcore
++
++## Shell Script CPU
++
++```bash
++for i in {1}
++do
++    name=bfloat16_2x10_${i}
++    python bin/exec.py \
++    mode=train \
++    run.id=${name} \
++    run.distributed=False \
++    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
++    framework=torch \
++    run.compute_mode=CPU \
++    run.minibatch_size=1 \
++    run.iterations=1 \
++    run.precision=2 \
++    > ${name}.log 2>&1 &
++done
++```
++
++## Shell Script
++
++```bash
++for i in {1}
++do
++    name=bfloat16_2x10_${i}
++    python bin/exec.py \
++    mode=train \
++    run.id=${name} \
++    run.distributed=False \
++    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
++    framework=torch \
++    run.compute_mode=IPU \
++    run.minibatch_size=2 \
++    run.iterations=10 \
++    run.precision=2 \
++    > ${name}.log 2>&1 &
++done
++```
+diff --git a/README_MODELS.md b/README_MODELS.md
+new file mode 100644
+index 0000000..de4bbbe
+--- /dev/null
++++ b/README_MODELS.md
+@@ -0,0 +1,105 @@
++# Model Changes
++
++20221114 The model runs on GC with the trainingModel wrapper.
++
++From Alex T
++
++I suggest the following steps to port the model, assuming it is PyTorch for training and inference:
++
++1. (Done) Make sure you can run it on CPU
++2. (Done) Set batch size to 1
++3. (Done) Create a training model with loss, and wrap it in poptorch.trainingModel, see [documentation](https://docs.graphcore.ai/projects/poptorch-user-guide/en/latest/overview.html#poptorch-trainingmodel) and [tutorial](https://github.com/graphcore/tutorials/tree/master/tutorials/pytorch/basics#build-the-model) - this line seems a good place to start from: [trainer.py](https://github.com/coreyjadams/CosmicTagger/blob/master/src/utils/torch/trainer.py#L742)
++4. Wrap the inference model in  poptorch.inferenceModel (link)
++5. Run to see if it fits in memory
++6. If it does not: create a profile with the Graph Analyser (link), set precision to fp16/half (link), if needed run pipeline-parallel (link)
++
++This information is from https://github.com/graphcore/tutorials/blob/master/tutorials/pytorch/basics/walkthrough.ipynb.
++
++## Config.py
++
++```python
++class ComputeMode(Enum):
++    CPU   = 0
++    #...
++    IPU   = 5
++```
++
++## Imports
++
++```python
++import poptorch
++```
++
++## Loss
++
++We will build a simple CNN model for a classification task. To do so, we can
++simply use PyTorch's API, including `torch.nn.Module`. The difference from
++what we're used to with pure PyTorch is the _**loss computation_, which has to
++be part of the `forward` function.**
++
++```python
++    def forward(self, x, labels=None):
++        x = self.pool(self.relu(self.conv1(x)))
++        x = self.norm(self.relu(self.conv2(x)))
++        x = torch.flatten(x, start_dim=1)
++        x = self.relu(self.fc1(x))
++        x = self.log_softmax(self.fc2(x))
++        # The model is responsible for the calculation
++        # of the loss when using an IPU. We do it this way:
++        if self.training:
++            return x, self.loss(x, labels)
++        return x
++```
++
++## Data Loader
++
++Use **poptorch.DataLoader**.
++
++```python
++opts = poptorch.Options()
++
++train_dataloader = poptorch.DataLoader(
++    opts, train_dataset, batch_size=16, shuffle=True, num_workers=20
++)
++```
++
++> ***Note for IPU benchmarking***:
++>
++> The warmup time can be avoided by calling `training_model.compile(data,
++> labels)` before any other call to the model. If not, the first call will
++> include the compilation time, which can take few minutes.
++>
++> ```python
++> # Warmup
++> print("Compiling + Warmup ...")
++> training_model.compile(data, labels)
++> ```
++
++See tutorials/pytorch/efficient_data_loading/walkthrough.ipynb for more infomation
++
++## Optimizer
++
++```python
++optimizer = poptorch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
++```
++
++## TrainingModel
++
++```python
++poptorch_model = poptorch.trainingModel(model, options=opts, optimizer=optimizer)
++```
++
++## Training Loop
++
++```python
++epochs = 5
++for epoch in tqdm(range(epochs), desc="epochs"):
++    total_loss = 0.0
++    for data, labels in tqdm(train_dataloader, desc="batches", leave=False):
++        output, loss = poptorch_model(data, labels)
++        total_loss += loss
++```
++
++The model is now trained! There's no need to retrieve the weights from the
++device as you would by calling `model.cpu()` with PyTorch. PopTorch has
++managed that step for us. We can now save and evaluate the model.
+diff --git a/cpu_test.sh b/cpu_test.sh
+new file mode 100644
+index 0000000..3b07c42
+--- /dev/null
++++ b/cpu_test.sh
+@@ -0,0 +1,29 @@
++#!/bin/bash
++# git checkout Graphcore
++for i in {1}
++do
++    name=bfloat16_2x10_${i}
++    python bin/exec.py \
++    mode=train \
++    run.id=${name} \
++    run.distributed=False \
++    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
++    framework=torch \
++    run.compute_mode=CPU \
++    run.minibatch_size=1 \
++    run.iterations=1 \
++    run.precision=3 \
++    > ${name}.log 2>&1 &
++done
++
++
++python3.8 bin/exec.py \
++mode=train \
++run.id=01 \
++run.distributed=False \
++data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
++framework=torch \
++run.compute_mode=CPU \
++run.minibatch_size=1 \
++run.iterations=1 \
++run.precision=3
+diff --git a/ct_gc.sh b/ct_gc.sh
+new file mode 100644
+index 0000000..a7817ac
+--- /dev/null
++++ b/ct_gc.sh
+@@ -0,0 +1,25 @@
++#!/bin/bash
++# exit when any command fails
++#set -e
++source /lambda_stor/software/graphcore/poplar_sdk/3.0.0/popart-ubuntu_20_04-3.0.0+5691-1e179b3b85/enable.sh
++source /lambda_stor/software/graphcore/poplar_sdk/3.0.0/poplar-ubuntu_20_04-3.0.0+5691-1e179b3b85/enable.sh
++mkdir -p ~/venvs/graphcore
++rm -rf ~/venvs/graphcore/cosmictagger_env
++virtualenv ~/venvs/graphcore/cosmictagger_env
++source ~/venvs/graphcore/cosmictagger_env/bin/activate
++POPLAR_SDK_ROOT=/lambda_stor/software/graphcore/poplar_sdk/3.0.0
++export POPLAR_SDK_ROOT=$POPLAR_SDK_ROOT
++pip install $POPLAR_SDK_ROOT/poptorch-3.0.0+86945_163b7ce462_ubuntu_20_04-cp38-cp38-linux_x86_64.whl
++#mkdir ~/tmp
++export TF_POPLAR_FLAGS=--executable_cache_path=~/tmp
++export POPTORCH_CACHE_DIR=~/tmp
++export POPART_LOG_LEVEL=WARN
++export POPLAR_LOG_LEVEL=WARN
++export POPLIBS_LOG_LEVEL=WARN
++export PYTHONPATH=/lambda_stor/software/graphcore/poplar_sdk/3.0.0/poplar-ubuntu_20_04-3.0.0+5691-1e179b3b85/python:$PYTHONPATH
++cd ~/DL/BruceRayWilsonAtANL/CosmicTagger
++
++
++python3 -m pip install scikit-build numpy
++python3 -m pip install -r requirements.txt
++git checkout Graphcore
+\ No newline at end of file
+diff --git a/ipu_test.sh b/ipu_test.sh
+new file mode 100644
+index 0000000..6e9f843
+--- /dev/null
++++ b/ipu_test.sh
+@@ -0,0 +1,17 @@
++#!/bin/bash
++# git checkout Graphcore
++for i in {1}
++do
++    name=bfloat16_2x10_${i}
++    python bin/exec.py \
++    mode=train \
++    run.id=${name} \
++    run.distributed=False \
++    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
++    framework=torch \
++    run.compute_mode=IPU \
++    run.minibatch_size=2 \
++    run.iterations=10 \
++    run.precision=3 \
++    > ${name}.log 2>&1 &
++done
+diff --git a/ipu_test_1.sh b/ipu_test_1.sh
+new file mode 100644
+index 0000000..b422567
+--- /dev/null
++++ b/ipu_test_1.sh
+@@ -0,0 +1,12 @@
++#!/bin/bash
++# git checkout Graphcore
++python3.8 bin/exec.py \
++mode=train \
++run.id=04x20_000 \
++run.distributed=False \
++data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
++framework=torch \
++run.compute_mode=IPU \
++run.minibatch_size=4 \
++run.iterations=20000 \
++run.precision=3
+diff --git a/src/config/config.py b/src/config/config.py
+index b060114..eb89619 100644
+--- a/src/config/config.py
++++ b/src/config/config.py
+@@ -15,6 +15,8 @@ class ComputeMode(Enum):
+     GPU   = 1
+     DPCPP = 2
+     XPU   = 3
++    HPU   = 4
++    IPU   = 5
+ 
+ class Precision(Enum):
+     float32  = 0
+diff --git a/src/networks/torch/uresnet2D.py b/src/networks/torch/uresnet2D.py
+index f173960..c0f840a 100644
+--- a/src/networks/torch/uresnet2D.py
++++ b/src/networks/torch/uresnet2D.py
+@@ -538,7 +538,7 @@ class UResNet(torch.nn.Module):
+                 nn.init.constant_(m.weight, 1)
+                 nn.init.constant_(m.bias, 0)
+ 
+-    def forward(self, input_tensor):
++    def forward(self, input_tensor, loss_calculator=None, labels_image=None):
+ 
+ 
+         batch_size = input_tensor.shape[0]
+@@ -569,4 +569,17 @@ class UResNet(torch.nn.Module):
+         x = tuple( self.final_layer(_x) for _x in x )
+         x = tuple( self.bottleneck(_x) for _x in x )
+         # Might need to do some reshaping here
++
++        if loss_calculator is not None:
++            # Check IPU mode.
++            # If wrong assert
++
++            labels_image = labels_image.long()
++            labels_image = torch.chunk(labels_image, chunks=3, dim=1)
++            shape =  labels_image[0].shape
++            labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
++
++            loss = loss_calculator(labels_image, x)
++            return x, labels_image, loss
++
+         return x
+diff --git a/src/utils/torch/trainer.py b/src/utils/torch/trainer.py
+index bcc6cc2..4ff52d3 100644
+--- a/src/utils/torch/trainer.py
++++ b/src/utils/torch/trainer.py
+@@ -13,6 +13,8 @@ import numpy
+ 
+ 
+ import torch
++import poptorch
++
+ try:
+     import ipex
+ except:
+@@ -92,6 +94,10 @@ class torch_trainer(trainercore):
+         else:
+             self._net = self._raw_net
+ 
++        if self.args.run.compute_mode == ComputeMode.IPU:
++            input("poptorch.trainingModel: Press <Enter> to continue...")
++            self._net = poptorch.trainingModel(self._net)
++
+     def initialize(self, io_only=False):
+ 
+         self._initialize_io(color=self._rank)
+@@ -156,8 +162,10 @@ class torch_trainer(trainercore):
+ 
+         if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
+             with torch.cuda.amp.autocast():
++                # This is for GPU.  No conversion required.
+                 self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
+         else:
++            # TODOBRW
+             self._net = torch.jit.trace_module(self._net, {"forward" : example_inputs['image']} )
+ 
+ 
+@@ -196,14 +204,23 @@ class torch_trainer(trainercore):
+         # IMPORTANT: the scheduler in torch is a multiplicative factor,
+         # but I've written it as learning rate itself.  So set the LR to 1.0
+         if self.args.mode.optimizer.name == OptimizerKind.rmsprop:
+-            self._opt = torch.optim.RMSprop(self._net.parameters(), 1.0, eps=1e-4)
++            if self.args.run.compute_mode == ComputeMode.IPU:
++                self._opt = poptorch.optim.RMSprop(self._net.parameters(), 1.0, eps=1e-4)
++            else:
++                self._opt = torch.optim.RMSprop(self._net.parameters(), 1.0, eps=1e-4)
+         else:
+-            self._opt = torch.optim.Adam(self._net.parameters(), 1.0)
++            if self.args.run.compute_mode == ComputeMode.IPU:
++                self._opt = poptorch.optim.Adam(self._net.parameters(), 1.0)
++            else:
++                self._opt = torch.optim.Adam(self._net.parameters(), 1.0)
+ 
+         # For a regression in pytowrch 1.12.0:
+         self._opt.param_groups[0]["capturable"] = False
+ 
+-        self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
++        if self.args.run.compute_mode == ComputeMode.IPU:
++            self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
++        else:
++            self.lr_scheduler = torch.optim.lr_scheduler.LambdaLR(self._opt, self.lr_calculator, last_epoch=-1)
+ 
+         if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
+             self.scaler = torch.cuda.amp.GradScaler()
+@@ -676,22 +693,33 @@ class torch_trainer(trainercore):
+             labels_image = minibatch_data['label']
+             # Run a forward pass of the model on the input image:
+             if net is None:
+-                logits_image = self._net(minibatch_data['image'])
++                if self.args.run.compute_mode == ComputeMode.IPU:
++                    logits_image, labels_image, loss = self._net(minibatch_data['image'], self.loss_calculator, labels_image)
++                else:
++                    logits_image = self._net(minibatch_data['image'])
+             else:
+-                logits_image = net(minibatch_data['image'])
++                if self.args.run.compute_mode == ComputeMode.IPU:
++                    logits_image, labels_image, loss = net(minibatch_data['image'], self.loss_calculator, labels_image)
++                else:
++                    logits_image = net(minibatch_data['image'])
++
++            if self.args.run.compute_mode != ComputeMode.IPU:
++                labels_image = labels_image.long()
++                labels_image = torch.chunk(labels_image, chunks=3, dim=1)
++                shape =  labels_image[0].shape
+ 
+-            labels_image = labels_image.long()
+-            labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+-            shape =  labels_image[0].shape
+ 
++                #### weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
+ 
+-            # weight = weight.view([shape[0], shape[-3], shape[-2], shape[-1]])
++                #### print numpy.unique(labels_image.cpu(), return_counts=True)
++                labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
+ 
+-            # print numpy.unique(labels_image.cpu(), return_counts=True)
+-            labels_image = [ _label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image ]
++        if self.args.run.compute_mode == ComputeMode.IPU:
++            return logits_image, labels_image, loss
+ 
+         return logits_image, labels_image
+ 
++
+     def train_step(self):
+ 
+         # For a train step, we fetch data, run a forward and backward pass, and
+@@ -739,13 +767,23 @@ class torch_trainer(trainercore):
+                             with torch.cuda.amp.autocast():
+                                 logits_image, labels_image = self.forward_pass(minibatch_data)
+                         else:
+-                            logits_image, labels_image = self.forward_pass(minibatch_data)
++                            # TODOBRW
++                            # Wrap the model in our PopTorch annotation wrapper.
++                            #poptorch_model = poptorch.trainingModel(model)
++                            if self.args.run.compute_mode == ComputeMode.IPU:
++                                logits_image, labels_image, loss = self.forward_pass(minibatch_data)
++                            else:
++                                logits_image, labels_image = self.forward_pass(minibatch_data)
+ 
+                     verbose = False
+ 
++
+                     # Compute the loss based on the logits
+                     with self.timing_context("loss"):
+-                        loss = self.loss_calculator(labels_image, logits_image)
++                        if self.args.run.compute_mode == ComputeMode.IPU:
++                            loss = loss
++                        else:
++                            loss = self.loss_calculator(labels_image, logits_image)
+ 
+ 
+                     # Compute the gradients for the network parameters:
+@@ -857,10 +895,15 @@ class torch_trainer(trainercore):
+                 with torch.cuda.amp.autocast():
+                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
+             else:
+-                logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
++                if self.args.run.compute_mode == ComputeMode.IPU:
++                    print(f'\n\ttype(val_net): {type(val_net)}')
++                    logits_image, labels_image, loss = self.forward_pass(minibatch_data, net=val_net)
++                else:
++                    logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
+ 
+             # Compute the loss based on the logits
+-            loss = self.loss_calculator(labels_image, logits_image)
++            if self.args.run.compute_mode != ComputeMode.IPU:
++                loss = self.loss_calculator(labels_image, logits_image)
+ 
+             # Compute any necessary metrics:
+             metrics = self._compute_metrics(logits_image, labels_image, loss)
