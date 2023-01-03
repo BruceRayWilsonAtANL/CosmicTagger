@@ -173,17 +173,17 @@ class distributed_trainer(torch_trainer):
             else:
                 return torch.cuda.device(int(self._local_rank))
         elif self.args.run.compute_mode == ComputeMode.XPU:
-            # return contextlib.nullcontext
+            # return contextlib.nullcontext()
             try:
                 return ipex.xpu.device(int(self._local_rank))
             except:
                 pass
-            return contextlib.nullcontext
+            return contextlib.nullcontext()
         elif self.args.run.compute_mode == ComputeMode.DPCPP:
-            return contextlib.nullcontext
+            return contextlib.nullcontext()
             # device = torch.device("dpcpp")
         else:
-            return contextlib.nullcontext
+            return contextlib.nullcontext()
             # device = torch.device('cpu')
 
     def barrier(self):

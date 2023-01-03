@@ -58,6 +58,7 @@ index 69cc804..e0ab814 100644
 
          self._initialize_io(color=0)
 
+
 diff --git a/src/utils/torch/distributed_trainer.py b/src/utils/torch/distributed_trainer.py
 index 433ba96..e8a21c6 100644
 --- a/src/utils/torch/distributed_trainer.py
@@ -79,14 +80,16 @@ index 433ba96..e8a21c6 100644
 +                import habana_frameworks.torch.distributed.hccl
 +            else:
 +                torch.cuda.set_device(int(local_rank))
-
-
              os.environ["RANK"] = str(rank)
+
+
 @@ -131,17 +135,24 @@ class distributed_trainer(torch_trainer):
                  backend = 'ccl'
              elif self.args.run.compute_mode == ComputeMode.GPU: backend = 'nccl'
              elif self.args.run.compute_mode == ComputeMode.CPU: backend = 'gloo'
 +            elif self.args.run.compute_mode == ComputeMode.HPU: backend = 'hccl'
+
+
 
              # init_method = 'file:///home/cadams/ddp_init/ddp_init.txt'
              init_method = 'env://'
@@ -113,6 +116,9 @@ index 433ba96..e8a21c6 100644
 +                )
 
 
+
+
+
      def save_model(self):
 @@ -169,7 +180,7 @@ class distributed_trainer(torch_trainer):
              return contextlib.nullcontext
@@ -132,6 +138,11 @@ index 433ba96..e8a21c6 100644
          else:
              device = torch.device('cpu')
          return device
+
+
+
+
+
 diff --git a/src/utils/torch/trainer.py b/src/utils/torch/trainer.py
 index 71b6cf3..46a6fb7 100644
 --- a/src/utils/torch/trainer.py
@@ -143,6 +154,8 @@ index 71b6cf3..46a6fb7 100644
  import sys
  import time
  import tempfile
+
+
 @@ -96,6 +98,16 @@ class torch_trainer(trainercore):
          if self.is_training():
              self.build_lr_schedule()
@@ -159,6 +172,8 @@ index 71b6cf3..46a6fb7 100644
 +
          with self.default_device_context():
              self.init_network()
+
+
 
 @@ -462,7 +474,7 @@ class torch_trainer(trainercore):
 
