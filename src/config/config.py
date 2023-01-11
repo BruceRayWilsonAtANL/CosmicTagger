@@ -15,6 +15,7 @@ class ComputeMode(Enum):
     GPU   = 1
     DPCPP = 2
     XPU   = 3
+    RDU   = 6
 
 class Precision(Enum):
     float32  = 0
