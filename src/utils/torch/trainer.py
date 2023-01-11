@@ -13,7 +13,12 @@ import numpy
 
 
 import torch
-import poptorch
+
+try:
+    import poptorch
+    import popdist
+except:
+    pass
 
 try:
     import intel_extension_for_pytorch as ipex
@@ -58,6 +63,12 @@ class torch_trainer(trainercore):
     '''
     def __init__(self,args):
         trainercore.__init__(self, args)
+        if self.args.run.compute_mode == ComputeMode.IPU and popdist.isPopdistEnvSet():
+            popdist.init()
+            self._instance = popdist.getInstanceIndex()
+        else:
+            self._instance = 0
+
 
 
     def init_network(self):
@@ -95,6 +106,27 @@ class torch_trainer(trainercore):
             self._net = torch.quantization.prepare_qat(self._raw_net)
         else:
             self._net = self._raw_net
+
+        if self.args.run.compute_mode == ComputeMode.IPU:
+            if popdist.isPopdistEnvSet():
+                opts = popdist.poptorch.Options()
+                # When using the dataloader with 'auto_distributed_partitioning=True'
+                # and 'shuffle=True' we must set the random seed to ensure that tensors
+                # are in the same order in all processes.
+                opts.randomSeed(self.args.seed)
+                # Replication factor is already set via PopRun so
+                # we ignore 'args.num_replicas'.
+                logging.info(f"Num of local replicas: {popdist.getNumLocalReplicas()}")
+            else:
+                opts = poptorch.Options()
+                opts.replicationFactor(self.args.num_replicas)
+
+            if self.is_training():
+                self._net = poptorch.trainingModel(self._net, opts, optimizer=torch.optim.SGD(self._net.parameters(), lr=1e-3))
+            else:
+                self._net = poptorch.inferenceModel(self._net)
+
+
 
         if self.args.run.compute_mode == ComputeMode.IPU:
             if self.is_training():
@@ -374,7 +406,7 @@ class torch_trainer(trainercore):
         file_path= self.args.output_dir  + "/checkpoints/"
 
 
-        name = file_path + 'model-{}.ckpt'.format(self._global_step)
+        name = file_path + f'model-{self._global_step}-{self._instance}.ckpt'
         checkpoint_file_path = file_path + "checkpoint"
 
         return name, checkpoint_file_path
@@ -998,3 +1030,10 @@ class torch_trainer(trainercore):
             self._saver.close()
         if self._aux_saver is not None:
             self._aux_saver.close()
+
+    def log_in_single_instance(self, string):
+        if self.args.run.compute_mode == ComputeMode.IPU:
+            if not popdist.isPopdistEnvSet() or popdist.getInstanceIndex() == 0:
+                logging.info(string)
+        else:
+            logging.info(string)
