@@ -17,6 +17,7 @@ import torch
 try:
     import poptorch
     import popdist
+    import popdist.poptorch
 except:
     pass
 
@@ -126,14 +127,6 @@ class torch_trainer(trainercore):
             else:
                 self._net = poptorch.inferenceModel(self._net)
 
-
-
-        if self.args.run.compute_mode == ComputeMode.IPU:
-            if self.is_training():
-                opts = poptorch.Options()
-                self._net = poptorch.trainingModel(self._net, opts, optimizer=torch.optim.SGD(self._net.parameters(), lr=1e-3))
-            else:
-                self._net = poptorch.inferenceModel(self._net)
 
     def initialize(self, io_only=False):
 
