@@ -2,6 +2,11 @@
 # git checkout Graphcore
 for i in {1,}
 do
+    poprun \
+    -vv \
+    --num-instances=4 \
+    --num-replicas=4 \
+    --executable-cache-path=$PYTORCH_CACHE_DIR
     name=bfloat16_2x10_${i}
     python bin/exec.py \
     mode=train \
