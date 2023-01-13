@@ -18,6 +18,15 @@ try:
 except:
     pass
 
+try:
+    from sambaflow import samba
+
+    import sambaflow.samba.utils as utils
+    from sambaflow.samba.utils.argparser import parse_app_args
+    from sambaflow.samba.utils.common import common_app_driver
+except:
+    pass
+
 
 
 
@@ -56,6 +65,9 @@ class torch_trainer(trainercore):
     '''
     def __init__(self,args):
         trainercore.__init__(self, args)
+
+        print(f'type(args): {type(args)}')
+        input('Press <Enter> to continue...')
 
 
     def init_network(self):
