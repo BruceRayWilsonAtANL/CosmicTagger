@@ -1,0 +1,5 @@
+{
+    "verbose": false,
+    "stage_instrumentation": "metapipe_stage_cycles",
+    "prism_flags": " --threads=64  --enable-inst-group-place --bandwidth-scaling-by-stage-latency=false"
+}

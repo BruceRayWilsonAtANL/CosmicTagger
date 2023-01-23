@@ -1,0 +1,6 @@
+{
+    "arc_flags" : "--legalize_dataflow=false",
+    "verbose": false,
+    "stage_instrumentation": "metapipe_stage_cycles",
+    "prism_flags": " --threads=64 "
+}

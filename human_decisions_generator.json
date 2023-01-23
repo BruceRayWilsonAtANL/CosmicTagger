@@ -1,0 +1,343 @@
+{
+    "section_boundaries": [
+        [
+          "initial_convolution__relu",
+          "initial_convolution__relu_1",
+          "initial_convolution__relu_2"
+        ],
+        [
+          "net_core__down_blocks__block_0__relu_1",
+          "net_core__down_blocks__block_0__relu_3",
+          "net_core__down_blocks__block_0__relu_5"
+        ],
+        [
+          "net_core__down_blocks__block_1__relu_1",
+          "net_core__down_blocks__block_1__relu_3",
+          "net_core__down_blocks__block_1__relu_5"
+        ],
+        [
+          "net_core__downsample__bottleneck__relu",
+          "net_core__downsample__bottleneck__relu_1",
+          "net_core__downsample__bottleneck__relu_2"
+        ],
+        [
+          "net_core__main_module__down_blocks__block_0__relu_1",
+          "net_core__main_module__down_blocks__block_0__relu_3",
+          "net_core__main_module__down_blocks__block_0__relu_5"
+        ],
+        [
+          "net_core__main_module__downsample__bottleneck__relu",
+          "net_core__main_module__downsample__bottleneck__relu_1",
+          "net_core__main_module__downsample__bottleneck__relu_2"
+        ],
+        [
+          "net_core__main_module__main_module__down_blocks__block_0__relu_1",
+          "net_core__main_module__main_module__down_blocks__block_0__relu_3",
+          "net_core__main_module__main_module__down_blocks__block_0__relu_5"
+        ],
+        [
+          "net_core__main_module__main_module__downsample__bottleneck__relu",
+          "net_core__main_module__main_module__downsample__bottleneck__relu_1",
+          "net_core__main_module__main_module__downsample__bottleneck__relu_2"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__down_blocks__block_0__relu_1",
+          "net_core__main_module__main_module__main_module__down_blocks__block_0__relu_3",
+          "net_core__main_module__main_module__main_module__down_blocks__block_0__relu_5"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__downsample__bottleneck__relu",
+          "net_core__main_module__main_module__main_module__downsample__bottleneck__relu_1",
+          "net_core__main_module__main_module__main_module__downsample__bottleneck__relu_2"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__down_blocks__block_0__relu_1",
+          "net_core__main_module__main_module__main_module__main_module__down_blocks__block_0__relu_3",
+          "net_core__main_module__main_module__main_module__main_module__down_blocks__block_0__relu_5"
+        ],
+
+        [
+          "net_core__main_module__main_module__main_module__main_module__downsample__bottleneck__relu",
+          "net_core__main_module__main_module__main_module__main_module__downsample__bottleneck__relu_1",
+          "net_core__main_module__main_module__main_module__main_module__downsample__bottleneck__relu_2"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__main_module__down_blocks__block_0__relu_1",
+          "net_core__main_module__main_module__main_module__main_module__main_module__down_blocks__block_0__relu_3",
+          "net_core__main_module__main_module__main_module__main_module__main_module__down_blocks__block_0__relu_5"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__main_module__downsample__pool",
+          "net_core__main_module__main_module__main_module__main_module__main_module__downsample__pool_1",
+          "net_core__main_module__main_module__main_module__main_module__main_module__downsample__pool_2"
+        ],
+        [
+          "cat"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__main_module__main_module__main_module__bottleneck__relu"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__main_module__main_module__main_module__blocks__block_0__relu_1"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__main_module__main_module__main_module__blocks__block_1__relu_1"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__main_module__main_module__main_module__blocks__block_2__relu_1"
+        ],
+
+        [
+          "net_core__main_module__main_module__main_module__main_module__main_module__main_module__main_module__blocks__block_3__relu_1"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__main_module__main_module__main_module__unbottleneck__conv"
+        ],
+        [
+          "add_41",
+          "add_42",
+          "add_43"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__main_module__up_blocks__block_0__relu_1",
+          "net_core__main_module__main_module__main_module__main_module__main_module__up_blocks__block_0__relu_3",
+          "net_core__main_module__main_module__main_module__main_module__main_module__up_blocks__block_0__relu_5"
+        ],
+        [
+          "add_45",
+          "add_47",
+          "add_49"
+        ],
+        [
+          "add_50",
+          "add_51",
+          "add_52"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__main_module__up_blocks__block_0__relu_1",
+          "net_core__main_module__main_module__main_module__main_module__up_blocks__block_0__relu_3",
+          "net_core__main_module__main_module__main_module__main_module__up_blocks__block_0__relu_5"
+        ],
+        [
+          "add_59",
+          "add_60",
+          "add_61"
+        ],
+        [
+          "net_core__main_module__main_module__main_module__up_blocks__block_0__relu_1",
+          "net_core__main_module__main_module__main_module__up_blocks__block_0__relu_3",
+          "net_core__main_module__main_module__main_module__up_blocks__block_0__relu_5"
+        ],
+        [
+          "add_68",
+          "add_69",
+          "add_70"
+        ],
+        [
+          "net_core__main_module__main_module__up_blocks__block_0__relu_1",
+          "net_core__main_module__main_module__up_blocks__block_0__relu_3",
+          "net_core__main_module__main_module__up_blocks__block_0__relu_5"
+        ],
+        [
+          "add_77",
+          "add_78",
+          "add_79"
+        ],
+        [
+          "net_core__main_module__up_blocks__block_0__relu_1",
+          "net_core__main_module__up_blocks__block_0__relu_3",
+          "net_core__main_module__up_blocks__block_0__relu_5"
+        ],
+        [
+          "add_86",
+          "add_87",
+          "add_88"
+        ],
+        [
+          "net_core__up_blocks__block_0__relu_1",
+          "net_core__up_blocks__block_0__relu_3",
+          "net_core__up_blocks__block_0__relu_5"
+        ],
+        [
+          "cat_1"
+        ]
+      ],
+    "mac_resources_scale": {
+        "fwd": 1,
+        "bwd": 1
+    },
+    "par_factors": {
+        "net_core__upsample__conv_bwd": [
+            [
+                2,
+                2
+            ],
+            [
+                2,
+                1
+            ],
+            [
+                3,
+                1
+            ],
+            [
+                1,
+                1
+            ],
+            [
+                true,
+                true
+            ]
+        ],
+        "net_core__upsample__conv_1_bwd": [
+            [
+                2,
+                2
+            ],
+            [
+                2,
+                1
+            ],
+            [
+                3,
+                1
+            ],
+            [
+                1,
+                1
+            ],
+            [
+                true,
+                true
+            ]
+        ],
+        "net_core__upsample__conv_2_bwd": [
+            [
+                2,
+                2
+            ],
+            [
+                2,
+                1
+            ],
+            [
+                3,
+                1
+            ],
+            [
+                1,
+                1
+            ],
+            [
+                true,
+                true
+            ]
+        ],
+        "net_core__main_module__upsample__conv_bwd": [
+            [
+                2,
+                2
+            ],
+            [
+                2,
+                1
+            ],
+            [
+                4,
+                1
+            ],
+            [
+                1,
+                1
+            ],
+            [
+                true,
+                true
+            ]
+        ],
+        "net_core__main_module__upsample__conv_1_bwd": [
+            [
+                2,
+                2
+            ],
+            [
+                2,
+                1
+            ],
+            [
+                4,
+                1
+            ],
+            [
+                1,
+                1
+            ],
+            [
+                true,
+                true
+            ]
+        ],
+        "net_core__main_module__upsample__conv_2_bwd": [
+            [
+                2,
+                2
+            ],
+            [
+                2,
+                1
+            ],
+            [
+                4,
+                1
+            ],
+            [
+                1,
+                1
+            ],
+            [
+                true,
+                true
+            ]
+        ]
+    },
+    "conv_tiling_excluded_sections": [
+        14, 55
+    ],
+    "num_tiles_for_sections": {
+        "0": [1, 10, 16],
+        "1": [1, 10, 16],
+        "2": [1, 10, 16],
+        "3": [1, 10, 16],
+        "4": [1, 10, 16],
+        "5": [1, 10, 16],
+        "6": [1, 10, 16],
+        "7": [1, 10, 16],
+        "8": [1, 10, 16],
+        "9": [1, 10, 16],
+        "10": [1, 10, 16],
+        "11": [1, 10, 16],
+        "12": [1, 10, 16],
+        "13": [1, 10, 16],
+        "14": [1, 1, 1],
+        "15": [1, 1, 1],
+        "16": [1, 1, 1],
+        "17": [1, 1, 1],
+        "18": [1, 1, 1],
+        "19": [1, 1, 1],
+        "20": [1, 1, 1],
+        "21": [1, 10, 16],
+        "22": [1, 10, 16],
+        "23": [1, 10, 16],
+        "24": [1, 10, 16],
+        "25": [1, 10, 16],
+        "26": [1, 10, 16],
+        "27": [1, 10, 16],
+        "28": [1, 10, 16],
+        "29": [1, 10, 16],
+        "30": [1, 10, 16],
+        "31": [1, 10, 16],
+        "32": [1, 10, 16],
+        "33": [1, 10, 16],
+        "34": [1, 10, 16]
+    }
+}
