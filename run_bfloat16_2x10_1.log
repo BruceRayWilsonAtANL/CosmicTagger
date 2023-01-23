@@ -1,0 +1,87 @@
+2023-01-23 21:17:45,965 - INFO - Dumping launch arguments.
+2023-01-23 21:17:45,965 - INFO - ['bin/exec.py', 'mode=train', 'run.id=bfloat16_2x10_1', 'run.distributed=False', 'data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/', 'framework=torch', 'run.compute_mode=IPU', 'run.minibatch_size=2', 'run.iterations=10', 'run.precision=3', 'hydra/job_logging=disabled']
+2023-01-23 21:17:45,965 - INFO - Running Training
+2023-01-23 21:17:45,972 - INFO - 
+
+-- CONFIG --
+data: 
+  aux_file....................: cosmic_tagging_val.h5
+  data_directory..............: /lambda_stor/data/datascience/cosmic_tagging/
+  data_format.................: channels_first
+  downsample..................: 1
+  file........................: cosmic_tagging_train.h5
+  img_transform...............: False
+  synthetic...................: False
+framework: 
+  distributed_mode............: DDP
+  name........................: torch
+  sparse......................: False
+mode: 
+  checkpoint_iteration........: 500
+  logging_iteration...........: 1
+  name........................: train
+  no_summary_images...........: True
+  optimizer: 
+    gradient_accumulation.....: 1
+    learning_rate.............: 0.0003
+    loss_balance_scheme.......: focal
+    name......................: adam
+  quantization_aware..........: False
+  summary_iteration...........: 1
+  weights_location............: 
+network: 
+  bias........................: True
+  block_concat................: False
+  blocks_deepest_layer........: 5
+  blocks_final................: 5
+  blocks_per_layer............: 2
+  bottleneck_deepest..........: 256
+  connections.................: concat
+  conv_mode...................: conv_2D
+  data_format.................: channels_first
+  depth.......................: 6
+  downsampling................: max_pooling
+  filter_size_deepest.........: 5
+  growth_rate.................: additive
+  n_initial_filters...........: 16
+  name........................: uresnet
+  normalization...............: batch
+  residual....................: True
+  upsampling..................: interpolation
+  weight_decay................: 0.1
+output_dir....................: output/torch/uresnet/bfloat16_2x10_1/
+run: 
+  aux_iterations..............: 10
+  compute_mode................: IPU
+  distributed.................: False
+  id..........................: bfloat16_2x10_1
+  iterations..................: 10
+  minibatch_size..............: 2
+  precision...................: float16
+  profile.....................: False
+
+2023-01-23 21:17:58,004 - INFO - Larcv file prepared
+2023-01-23 21:17:58,430 - INFO - Larcv file prepared
+2023-01-23 21:17:58,957 - INFO - Total number of trainable parameters in this network: 18382131
+2023-01-23 21:17:59.003315: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2023-01-23 21:18:03.409005: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /software/graphcore/poplar_sdk/3.1.0/popart-ubuntu_20_04-3.1.0+6824-9c103dc348/lib:/software/graphcore/poplar_sdk/3.1.0/poplar-ubuntu_20_04-3.1.0+6824-9c103dc348/lib
+2023-01-23 21:18:03.409042: I tensorflow/compiler/xla/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+2023-01-23 21:18:12.318199: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer.so.7'; dlerror: libnvinfer.so.7: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /software/graphcore/poplar_sdk/3.1.0/popart-ubuntu_20_04-3.1.0+6824-9c103dc348/lib:/software/graphcore/poplar_sdk/3.1.0/poplar-ubuntu_20_04-3.1.0+6824-9c103dc348/lib
+2023-01-23 21:18:12.319944: W tensorflow/compiler/xla/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libnvinfer_plugin.so.7'; dlerror: libnvinfer_plugin.so.7: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /software/graphcore/poplar_sdk/3.1.0/popart-ubuntu_20_04-3.1.0+6824-9c103dc348/lib:/software/graphcore/poplar_sdk/3.1.0/poplar-ubuntu_20_04-3.1.0+6824-9c103dc348/lib
+2023-01-23 21:18:12.319953: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Cannot dlopen some TensorRT libraries. If you would like to use Nvidia GPU with TensorRT, please make sure the missing libraries mentioned above are installed properly.
+2023-01-23 21:18:20,413 - INFO - No checkpoint file found, restarting from scratch
+2023-01-23 21:19:19,457 - INFO - train Step 0 metrics: Average/Non_Bkg_Accuracy: 0.00604, Average/mIoU: 0.000744, loss: 5.97 (0.017 IOs / 4.6 (Step)(s))
+2023-01-23 21:20:07,964 - INFO - train Step 1 metrics: Average/Non_Bkg_Accuracy: 0.00572, Average/mIoU: 0.000255, loss: 5.21 (0.041 Img/s / 0.042 IOs / 4.4 (Step)(s))
+2023-01-23 21:20:38,092 - INFO - train Step 2 metrics: Average/Non_Bkg_Accuracy: 0.0141, Average/mIoU: 0.000648, loss: 6.6 (0.066 Img/s / 0.022 IOs / 4.1 (Step)(s))
+2023-01-23 21:21:39,881 - INFO - train Step 3 metrics: Average/Non_Bkg_Accuracy: 0.00397, Average/mIoU: 0.00074, loss: 6.05 (0.032 Img/s / 0.12 IOs / 4.0 (Step)(s))
+2023-01-23 21:22:52,086 - INFO - train Step 4 metrics: Average/Non_Bkg_Accuracy: 0.00306, Average/mIoU: 0.000377, loss: 6.33 (0.028 Img/s / 0.042 IOs / 4.7 (Step)(s))
+2023-01-23 21:23:29,861 - INFO - train Step 5 metrics: Average/Non_Bkg_Accuracy: 0.0132, Average/mIoU: 0.000585, loss: 4.97 (0.053 Img/s / 0.038 IOs / 4.8 (Step)(s))
+2023-01-23 21:24:46,552 - INFO - train Step 6 metrics: Average/Non_Bkg_Accuracy: 0.00391, Average/mIoU: 0.000559, loss: 5.85 (0.026 Img/s / 0.08 IOs / 4.1 (Step)(s))
+2023-01-23 21:25:14,248 - INFO - train Step 7 metrics: Average/Non_Bkg_Accuracy: 0.00547, Average/mIoU: 0.000495, loss: 6.3 (0.072 Img/s / 0.024 IOs / 4.3 (Step)(s))
+2023-01-23 21:26:32,359 - INFO - train Step 8 metrics: Average/Non_Bkg_Accuracy: 0.00768, Average/mIoU: 0.000588, loss: 5.65 (0.026 Img/s / 0.045 IOs / 4.7 (Step)(s))
+2023-01-23 21:26:55,787 - INFO - train Step 9 metrics: Average/Non_Bkg_Accuracy: 0.0069, Average/mIoU: 0.00129, loss: 7.68 (0.085 Img/s / 0.023 IOs / 3.7 (Step)(s))
+2023-01-23 21:26:55,806 - INFO - Saving run profile information.
+2023-01-23 21:26:55,814 - INFO - Total time to batch_process: 515.4006
+2023-01-23 21:26:55,815 - INFO - Total time to batch process except first iteration: 456.3490, throughput: 0.0394
+2023-01-23 21:26:55,815 - INFO - Total time to batch process except first two iterations: 407.7200, throughput: 0.0392
