@@ -21,6 +21,7 @@ try:
     from sambaflow import samba
 
     import sambaflow.samba.utils as sn_utils
+    from sambaflow.mac.metadata import ConvTilingMetadata
     from sambaflow.samba.utils.argparser import parse_app_args
     from sambaflow.samba.utils.common import common_app_driver
 except:
@@ -31,8 +32,26 @@ from typing import List, Tuple
 #from cosmictagger.larcvio.larcv_fetcher import larcv_fetcher
 from larcvio.larcv_fetcher import larcv_fetcher
 
-# TODOBRW This might get removed.
+# TODOBRW Begin This might get removed.
 from src.networks.torch.uresnet2D import UResNet
+
+
+def get_inputs(args: argparse.Namespace) -> Tuple[samba.SambaTensor]:
+    image_shape = get_image_shape(args)
+    input = samba.randn(*image_shape, name='input', batch_dim=0).bfloat16()
+    input.requires_grad = not args.inference
+    return (input, )
+
+
+def get_image_shape(args: argparse.Namespace) -> List[int]:
+    """
+    Compute the image shape given the arguments. Based on the downsample image arguments the image shape changes.
+    """
+    full_height = larcv_fetcher.FULL_RESOLUTION_H
+    full_width = larcv_fetcher.FULL_RESOLUTION_W
+    channels = 3
+    return [args.batch_size, channels] + [int(i / (args.downsample_images + 1)) for i in [full_height, full_width]]
+# TODOBRW Begin This might get removed.
 
 #############################
 
@@ -135,42 +154,38 @@ class exec(object):
         if self.args.run.compute_mode == ComputeMode.RDU:
             model = UResNet(self.args)
 
-            # TODOBRW Begin
             model.bfloat16()
 
             samba.from_torch_(model)
 
             # Dummy inputs required for tracing.
-            inputs = get_inputs(args)
-            # TODOBRW End
+            inputs = get_inputs(self.args)
 
-            if args.inference:
+            if self.args.inference:
                 model.eval()
 
-            # TODOBRW Begin
             metadata = dict()
-            if args.enable_tiling:
+            if self.args.enable_tiling:
                 original_size = inputs[0].shape
 
                 metadata[ConvTilingMetadata.key] = ConvTilingMetadata(original_size=original_size)
 
             # Instantiate a optimizer.
             optim = samba.optim.AdamW(model.parameters(), lr=0, betas=(0.9,
-                                                                    0.997), weight_decay=0) if not args.inference else None
-            # TODOBRW End
+                                                                    0.997), weight_decay=0) if not self.args.inference else None
 
-            # TODOBRW Begin
-            if args.command == "compile":
+            if self.args.command == "compile":
                 samba.session.compile(model,
                                     inputs,
                                     optim,
                                     name='uresnet',
                                     app_dir=sn_utils.get_file_dir(__file__),
                                     metadata=metadata,
-                                    init_output_grads=not args.inference,
-                                    config_dict=vars(args),
+                                    init_output_grads=not self.args.inference,
+                                    config_dict=vars(self.args),
                                     squeeze_bs_dim=True)
-            # TODOBRW End
+
+            return
 
 
 # run.distributed=False
