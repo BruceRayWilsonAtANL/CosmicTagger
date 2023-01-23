@@ -92,8 +92,8 @@ class trainercore(object):
 
     def _initialize_io(self, color=None):
 
+        # TODOBRW This might be useful for compile only.
         if self.args.mode == "build_net": return
-
 
         if not self.args.data.synthetic:
             f = pathlib.Path(self.args.data.data_directory + self.args.data.file)

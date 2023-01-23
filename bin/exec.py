@@ -16,6 +16,24 @@ from hydra.core.utils import configure_log
 
 hydra.output_subdir = None
 
+
+try:
+    from sambaflow import samba
+
+    import sambaflow.samba.utils as sn_utils
+    from sambaflow.samba.utils.argparser import parse_app_args
+    from sambaflow.samba.utils.common import common_app_driver
+except:
+    pass
+
+import argparse
+from typing import List, Tuple
+#from cosmictagger.larcvio.larcv_fetcher import larcv_fetcher
+from larcvio.larcv_fetcher import larcv_fetcher
+
+# TODOBRW This might get removed.
+from src.networks.torch.uresnet2D import UResNet
+
 #############################
 
 # Add the local folder to the import path:
@@ -25,6 +43,59 @@ sys.path.insert(0,network_dir)
 
 from src.config import Config, ComputeMode
 from src.config.mode import ModeKind
+
+
+def add_args(parser):
+    # Network Params
+    parser.add_argument("--use-bias", action="store_true", default=True)
+    parser.add_argument("--batch-norm", action="store_true", default=False)
+    parser.add_argument("--residual", action="store_true", default=False)
+    parser.add_argument("--bottleneck-deepest", type=int, default=256)
+    parser.add_argument("--block-concat", action="store_true", default=False)
+    parser.add_argument("--filter-size-deepest", type=int, default=5)
+    parser.add_argument("--blocks-deepest-layer", type=int, default=5)
+    parser.add_argument("--blocks-per-layer", type=int, default=2)
+    parser.add_argument("--blocks-final", type=int, default=0)
+    parser.add_argument("--growth-rate", type=str, default="additive")
+    parser.add_argument("--n-initial-filters", type=int, default=16)
+    parser.add_argument("--downsampling", type=str, default="max_pooling")
+    parser.add_argument("--upsampling", type=str, default="convolutional")
+    parser.add_argument("--connections", type=str, default="sum")
+    parser.add_argument("--network-depth", type=int, default=6)
+
+    # DataLoader args
+    parser.add_argument('-f', '--file', type=pathlib.Path, default="cosmic_tagging_train.h5", help="IO Input File")
+    parser.add_argument('--synthetic', type=bool, default=False, help="Use synthetic data instead of real data.")
+    parser.add_argument('-ds', '--downsample-images', default=1, type=int, help='Dense downsampling of the images.')
+
+    # Helper args for accuracy regression
+    parser.add_argument("--acc-test", action="store_true", default=False, help="Run the accuracy check")
+    parser.add_argument(
+        "--use-pickle-dataset",
+        action="store_true",
+        help="Use a preprocessed dataset for accuracy regressions. This flag will override other dataset options")
+
+
+def add_run_args(parser):
+    # Tiling Params
+    parser.add_argument('--enable-tiling', type=bool, default=False, help='Enable DRAM tiling')
+
+    # Training Params
+    parser.add_argument('-lr', '--learning-rate', type=float, default=0.0003, help='Initial learning rate')
+    parser.add_argument('--loss-balance-scheme', type=str, choices=['none', 'focal', 'even', 'light'], default='focal')
+    parser.add_argument('-i', '--iterations', type=int, default=100, help="Number of iterations to process")
+    parser.add_argument('-m', '--compute-mode', type=str, choices=['CPU', 'RDU'], default='RDU', help="CPU or RDU")
+
+
+def get_image_shape(args: argparse.Namespace) -> List[int]:
+    """
+    Compute the image shape given the arguments. Based on the downsample image arguments the image shape changes.
+    """
+    full_height = larcv_fetcher.FULL_RESOLUTION_H
+    full_width = larcv_fetcher.FULL_RESOLUTION_W
+    channels = 3
+    return [args.batch_size, channels] + [int(i / (args.downsample_images + 1)) for i in [full_height, full_width]]
+
 
 class exec(object):
 
@@ -48,7 +119,61 @@ class exec(object):
         logger.info("Dumping launch arguments.")
         logger.info(sys.argv)
 
+        if self.args.run.compute_mode == ComputeMode.RDU:
+            sn_utils.set_seed(256)
+            self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
+        else:
+            self.argparseArgs = None
 
+
+
+
+
+
+
+
+        if self.args.run.compute_mode == ComputeMode.RDU:
+            model = UResNet(self.args)
+
+            # TODOBRW Begin
+            model.bfloat16()
+
+            samba.from_torch_(model)
+
+            # Dummy inputs required for tracing.
+            inputs = get_inputs(args)
+            # TODOBRW End
+
+            if args.inference:
+                model.eval()
+
+            # TODOBRW Begin
+            metadata = dict()
+            if args.enable_tiling:
+                original_size = inputs[0].shape
+
+                metadata[ConvTilingMetadata.key] = ConvTilingMetadata(original_size=original_size)
+
+            # Instantiate a optimizer.
+            optim = samba.optim.AdamW(model.parameters(), lr=0, betas=(0.9,
+                                                                    0.997), weight_decay=0) if not args.inference else None
+            # TODOBRW End
+
+            # TODOBRW Begin
+            if args.command == "compile":
+                samba.session.compile(model,
+                                    inputs,
+                                    optim,
+                                    name='uresnet',
+                                    app_dir=sn_utils.get_file_dir(__file__),
+                                    metadata=metadata,
+                                    init_output_grads=not args.inference,
+                                    config_dict=vars(args),
+                                    squeeze_bs_dim=True)
+            # TODOBRW End
+
+
+# run.distributed=False
         if config.mode.name == ModeKind.train:
             self.train()
         if config.mode.name == ModeKind.iotest:
@@ -187,7 +312,7 @@ class exec(object):
                 self.trainer = distributed_trainer.distributed_trainer(self.args)
             else:
                 from src.utils.torch import trainer
-                self.trainer = trainer.torch_trainer(self.args)
+                self.trainer = trainer.torch_trainer(self.args, self.argparseArgs)
 
 
     def inference(self):

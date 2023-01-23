@@ -1,4 +1,71 @@
-# README SambaNova
+# CosmicTagger on SambaNova
+
+## Set Up
+
+```bash
+source /software/sambanova/envs/sn_env.sh
+mkdir -p ~/venvs/sambanova
+rm -rf ~/venvs/sambanova/cosmictagger_env
+virtualenv ~/venvs/sambanova/cosmictagger_env
+source ~/venvs/sambanova/cosmictagger_env/bin/activate
+mkdir ~/tmp
+cd ~/DL/github.com/BruceRayWilsonAtANL/CosmicTagger
+#
+#
+#python3 -m pip install scikit-build numpy
+#python3 -m pip install -r requirements.txt
+#git checkout sambanova
+```
+
+## Shell Script CPU
+
+```bash
+for i in {1,}
+do
+    name=bfloat16_2x10_${i}
+    python bin/exec.py \
+    mode=train \
+    run.id=${name} \
+    run.distributed=False \
+    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
+    data.downsample=0 \
+    framework=torch \
+    run.compute_mode=CPU \
+    run.minibatch_size=1 \
+    run.iterations=1 \
+    run.precision=3 \
+    > ${name}.log 2>&1 &
+done
+```
+
+## Shell Script IPU
+
+```bash
+for i in {1,}
+do
+    name=bfloat16_2x10_${i}
+    python bin/exec.py \
+    mode=train \
+    run.id=${name} \
+    run.distributed=False \
+    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
+    data.downsample=0 \
+    framework=torch \
+    run.compute_mode=IPU \
+    run.minibatch_size=2 \
+    run.iterations=10 \
+    run.precision=3 \
+    > ${name}.log 2>&1 &
+done
+```
+
+
+
+
+
+
+
+
 
 ```bash
 /opt/sambaflow/apps/private/anl/cosmictagger.py \

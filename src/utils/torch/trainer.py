@@ -1,8 +1,7 @@
+import argparse
+import pickle
+from typing import Dict, List, Tuple
 import os
-import sys
-import time
-import tempfile
-from collections import OrderedDict
 
 import logging
 logger = logging.getLogger()
@@ -13,20 +12,18 @@ import numpy
 
 
 import torch
-try:
-    import intel_extension_for_pytorch as ipex
-except:
-    pass
+import torch.nn as nn
 
 try:
     from sambaflow import samba
-
-    import sambaflow.samba.utils as utils
-    from sambaflow.samba.utils.argparser import parse_app_args
-    from sambaflow.samba.utils.common import common_app_driver
+    from sambaflow.samba import SambaTensor
+    from sambaflow.mac.metadata import ConvTilingMetadata
 except:
     pass
 
+from src.networks.torch         import LossCalculator
+#from cosmictagger.larcvio.larcv_fetcher import larcv_fetcher
+from .src.utils.core.larcvio.larcv_fetcher import larcv_fetcher
 
 
 
@@ -39,7 +36,6 @@ torch.backends.cudnn.benchmark = True
 # from torch.jit import trace
 
 from src.utils.core.trainercore import trainercore
-from src.networks.torch         import LossCalculator
 
 import contextlib
 @contextlib.contextmanager
@@ -56,6 +52,24 @@ except:
 
 from src.config import ComputeMode, Precision, ConvMode, ModeKind, DataFormatKind
 
+
+def get_inputs(args: argparse.Namespace) -> Tuple[samba.SambaTensor]:
+    image_shape = get_image_shape(args)
+    input = samba.randn(*image_shape, name='input', batch_dim=0).bfloat16()
+    input.requires_grad = not args.inference
+    return (input, )
+
+
+def get_image_shape(args: argparse.Namespace) -> List[int]:
+    """
+    Compute the image shape given the arguments. Based on the downsample image arguments the image shape changes.
+    """
+    full_height = larcv_fetcher.FULL_RESOLUTION_H
+    full_width = larcv_fetcher.FULL_RESOLUTION_W
+    channels = 3
+    return [args.batch_size, channels] + [int(i / (args.downsample_images + 1)) for i in [full_height, full_width]]
+
+
 class torch_trainer(trainercore):
     '''
     This class is the core interface for training.  Each function to
@@ -63,11 +77,28 @@ class torch_trainer(trainercore):
     a NotImplemented error.
 
     '''
-    def __init__(self,args):
+    NEUTRINO_INDEX = 2
+    COSMIC_INDEX = 1
+
+    def __init__(self, args, argparseArgs=None):
         trainercore.__init__(self, args)
 
-        print(f'type(args): {type(args)}')
-        input('Press <Enter> to continue...')
+        self.argparseArgs = argparseArgs
+        self.use_pickle_dataset = argparseArgs.use_pickle_dataset
+        self._global_step = 0
+        self._rank = 0
+        mode = "inference" if args.inference else "train"
+
+        # Initialize the data_fetcher based on dataset type.
+        if self.use_pickle_dataset:
+            self.data_fetcher = PickledIterator(self.args.file)
+        else:
+            self.data_fetcher = larcv_fetcher.larcv_fetcher(mode=mode,
+                                                            downsample=args.downsample_images,
+                                                            synthetic=args.synthetic,
+                                                            dataformat="channels_first",
+                                                            distributed=False,
+                                                            sparse=False)
 
 
     def init_network(self):
@@ -76,6 +107,14 @@ class torch_trainer(trainercore):
         if self.args.network.conv_mode == ConvMode.conv_2D and not self.args.framework.sparse:
             from src.networks.torch.uresnet2D import UResNet
             self._raw_net = UResNet(self.args.network)
+
+            if self.args.run.compute_mode == ComputeMode.RDU:
+                self._raw_net.bfloat16()
+
+                samba.from_torch_(self._raw_net)
+
+                # Dummy inputs required for tracing.
+                self.inputs = get_inputs(self.argparseArgs)
 
         else:
             if self.args.framework.sparse and self.args.mode.name != ModeKind.iotest:
@@ -106,9 +145,13 @@ class torch_trainer(trainercore):
         else:
             self._net = self._raw_net
 
-    def initialize(self, io_only=False):
+    def initialize(self, io_only=False) -> None:
 
         self._initialize_io(color=self._rank)
+
+        if not self.use_pickle_dataset:
+            self._train_data_size = self.data_fetcher.prepare_cosmic_sample("train", self.args.file,
+                                                                            self.args.batch_size, color)
 
         if io_only:
             return
@@ -120,6 +163,7 @@ class torch_trainer(trainercore):
             self.init_network()
 
 
+            # TODOBRW
             self._net = self._net.to(self.default_device())
 
             # self._net.to(device)
@@ -132,11 +176,14 @@ class torch_trainer(trainercore):
             self.init_saver()
 
             self._global_step = 0
+            self._rank = 0
+            mode = "inference" if self.argparseArgs.inference else "train"
 
             self.restore_model()
 
             # If using half precision on the model, convert it now:
             if self.args.run.precision == Precision.bfloat16:
+                # TODOBRW
                 self._net = self._net.bfloat16()
 
 
@@ -149,6 +196,24 @@ class torch_trainer(trainercore):
             if self.args.run.precision == Precision.mixed:
                 if self.is_training() and  self.args.mode.optimizer.gradient_accumulation > 1:
                     raise Exception("Can not accumulate gradients in half precision.")
+
+            if self.args.run.compute_mode == ComputeMode.RDU:
+                samba.session.compile(self._net,
+                                    self.inputs,
+                                    self._opt,
+                                    name='uresnet',
+                                    app_dir=sn_utils.get_file_dir(__file__),
+                                    metadata=self.metadata,
+                                    init_output_grads=not self.argparseArgs.inference,
+                                    config_dict=vars(self.argparseArgs),
+                                    squeeze_bs_dim=True)
+
+                sn_utils.trace_graph(self._net,
+                                    self.inputs,
+                                    self._opt,
+                                    init_output_grads=not self.argparseArgs.inference,
+                                    pef=self.argparseArgs.pef, # TODOBRW Does this get used in the compile step?
+                                    mapping=self.argparseArgs.mapping)
 
             # self.trace_module()
 
@@ -165,6 +230,7 @@ class torch_trainer(trainercore):
 
         # Trace the module:
         minibatch_data = self.larcv_fetcher.fetch_next_batch("train",force_pop = True)
+        # TODOBRW
         example_inputs = self.to_torch(minibatch_data)
         # Run a forward pass of the model on the input image:
 
@@ -196,7 +262,10 @@ class torch_trainer(trainercore):
         state = self.load_state_from_file()
 
         if state is not None:
-            self.restore_state(state)
+            if self.args.run.compute_mode == ComputeMode.RDU:
+                assert ValueError('Restore model from file is not implemented but could be in the future')
+            else:
+                self.restore_state(state)
 
 
     def init_optimizer(self):
@@ -206,13 +275,24 @@ class torch_trainer(trainercore):
         # get the initial learning_rate:
         initial_learning_rate = self.lr_calculator(self._global_step)
 
-
         # IMPORTANT: the scheduler in torch is a multiplicative factor,
         # but I've written it as learning rate itself.  So set the LR to 1.0
         if self.args.mode.optimizer.name == OptimizerKind.rmsprop:
+            if self.args.run.compute_mode == ComputeMode.RDU:
+                assert ValueError('OptimizerKind.rmsprop is not an option on an SambaNova RDU at this time.')
             self._opt = torch.optim.RMSprop(self._net.parameters(), 1.0, eps=1e-4)
         else:
-            self._opt = torch.optim.Adam(self._net.parameters(), 1.0)
+            if self.args.run.compute_mode == ComputeMode.RDU:
+                self.metadata = dict()
+                if self.argpa.enable_tiling:
+                    original_size = self.inputs[0].shape
+
+                    self.metadata[ConvTilingMetadata.key] = ConvTilingMetadata(original_size=original_size)
+
+                    # Instantiate a optimizer.
+                    self._opt = samba.optim.AdamW(self._net.parameters(), lr=0, betas=(0.9, 0.997), weight_decay=0)
+                else:
+                    self._opt = torch.optim.Adam(self._net.parameters(), 1.0)
 
         # For a regression in pytowrch 1.12.0:
         self._opt.param_groups[0]["capturable"] = False
@@ -621,6 +701,8 @@ class torch_trainer(trainercore):
         # elif self.args.run.compute_mode == "DPCPP":
         #     return contextlib.nullcontext()
         #     # device = torch.device("dpcpp")
+        elif self.args.run.compute_mode == ComputeMode.RDU:
+            return contextlib.nullcontext()
         else:
             return contextlib.nullcontext()
             # device = torch.device('cpu')
@@ -633,11 +715,23 @@ class torch_trainer(trainercore):
             device = torch.device("xpu")
         # elif self.args.run.compute_mode == "DPCPP":
         #     device = torch.device("dpcpp")
+        elif self.args.run.compute_mode == ComputeMode.RDU:
+            device = None
         else:
             device = torch.device('cpu')
         return device
 
-    def to_torch(self, minibatch_data, device_context=None):
+    def to_torch(self, minibatch_data: Dict, device_context=None) -> Dict:
+
+        if self.args.run.compute_mode == ComputeMode.RDU:
+            """
+            Preprocess the minibatch_data to convert numpy arrays to torch tensors.
+            """
+            for key in minibatch_data:
+                if key == 'entries' or key == 'event_ids':
+                    continue
+                minibatch_data[key] = torch.tensor(minibatch_data[key])
+            return minibatch_data
 
         if device_context is None:
             device_context = self.default_device_context()
@@ -684,9 +778,26 @@ class torch_trainer(trainercore):
 
         return minibatch_data
 
+    def forward_pass_RDU(self, input_tensors: Tuple[SambaTensor], output_tensors: Tuple[SambaTensor]):
+        logits_image = samba.session.run(input_tensors=input_tensors,
+                                            output_tensors=output_tensors,
+                                            section_types=["fwd"])[0]
+
+        # Convert back to float to compute loss on host.
+        logits_image = logits_image.float()
+        logits_image = samba.to_torch_tensor(logits_image)
+
+        return logits_image
+
+    def _preprocess_labels(self, labels_image: torch.Tensor) -> List[torch.Tensor]:
+        labels_image = labels_image.long()
+        labels_image = torch.chunk(labels_image, chunks=3, dim=1)
+        shape = labels_image[0].shape
+        labels_image = [_label.view([shape[0], shape[-2], shape[-1]]) for _label in labels_image]
+        return labels_image
+
 
     def forward_pass(self, minibatch_data, net=None):
-
 
         with self.default_device_context():
             minibatch_data = self.to_torch(minibatch_data)
@@ -756,6 +867,18 @@ class torch_trainer(trainercore):
                         if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
                             with torch.cuda.amp.autocast():
                                 logits_image, labels_image = self.forward_pass(minibatch_data)
+                        elif self.args.run.compute_mode == ComputeMode.RDU:
+                            minibatch_data = self.to_torch(minibatch_data)
+                            input_tensors = (minibatch_data["image"], )
+                            input_tensors = (samba.from_torch(input_tensors[0], name='input', batch_dim=0).bfloat16(), )
+
+                            output_tensors = self.model.output_tensors
+                            labels_image = self._preprocess_labels(minibatch_data['label'])
+
+                            # Run the forward pass
+                            logits_image = self.forward_pass_RDU(input_tensors, output_tensors)
+                            logits_image.requires_grad = True
+
                         else:
                             logits_image, labels_image = self.forward_pass(minibatch_data)
 
@@ -763,7 +886,12 @@ class torch_trainer(trainercore):
 
                     # Compute the loss based on the logits
                     with self.timing_context("loss"):
-                        loss = self.loss_calculator(labels_image, logits_image)
+                        if self.args.run.compute_mode == ComputeMode.RDU:
+                            # Compute loss on host
+                            predictions = torch.chunk(logits_image, chunks=3, dim=1)
+                            loss = self.loss_calculator(labels_image, predictions)
+                        else:
+                            loss = self.loss_calculator(labels_image, logits_image)
 
 
                     # Compute the gradients for the network parameters:
@@ -813,6 +941,17 @@ class torch_trainer(trainercore):
                 if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
                     self.scaler.step(self._opt)
                     self.scaler.update()
+
+                elif self.args.compute_mode == "RDU":
+                    # Compute samba backward + optimizer step
+                    hyperparam_dict = {"lr": self.args.learning_rate}
+                    samba.session.run(input_tensors=input_tensors,
+                                    output_tensors=output_tensors,
+                                    section_types=['bckwd', 'opt'],
+                                    grad_of_outputs=[samba.from_torch(logits_image.grad).bfloat16()],
+                                    hyperparam_dict=hyperparam_dict,
+                                    data_parallel=self.args.data_parallel,
+                                    reduce_on_rdu=self.args.reduce_on_rdu)
                 else:
                     self._opt.step()
 
@@ -914,6 +1053,7 @@ class torch_trainer(trainercore):
         minibatch_data = self.larcv_fetcher.fetch_next_batch("train", force_pop=force_pop)
 
         # Convert the input data to torch tensors
+        # TODOBRW
         minibatch_data = self.to_torch(minibatch_data)
 
 
@@ -971,3 +1111,23 @@ class torch_trainer(trainercore):
             self._saver.close()
         if self._aux_saver is not None:
             self._aux_saver.close()
+
+
+class PickledIterator():
+    """
+    Helper iterator for the pickled file.
+    """
+    def __init__(self, dataset_file):
+        super().__init__()
+        self.fp = open(dataset_file, "rb")
+
+    def fetch_next_batch(self, *args, **kwargs):
+        minibatch_data = {}
+        try:
+            image, label = pickle.load(self.fp)
+        except Exception as e:
+            print("Cannot fetch next batch in the pickledIterator")
+            print(e)
+        minibatch_data["image"] = image
+        minibatch_data["label"] = label
+        return minibatch_data
