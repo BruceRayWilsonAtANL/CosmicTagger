@@ -3,6 +3,7 @@ if [ "${1}" == "install" ] ; then
     mkdir -p ~/venvs/graphcore
     rm -rf ~/venvs/graphcore/cosmictagger31_env
     virtualenv ~/venvs/graphcore/cosmictagger31_env
+fi
 
 source ~/venvs/graphcore/cosmictagger31_env/bin/activate
 
@@ -11,6 +12,7 @@ if [ "${1}" == "install" ] ; then
     export POPLAR_SDK_ROOT=$POPLAR_SDK_ROOT
     pip install $POPLAR_SDK_ROOT/poptorch-3.1.0+98660_0a383de63f_ubuntu_20_04-cp38-cp38-linux_x86_64.whl
     mkdir ~/tmp
+fi
 
 export TF_POPLAR_FLAGS=--executable_cache_path=~/tmp
 export POPTORCH_CACHE_DIR=~/tmp
@@ -26,6 +28,7 @@ cd ~/DL/github.com/BruceRayWilsonAtANL/CosmicTagger
 if [ "${1}" == "install" ] ; then
     python3 -m pip install scikit-build numpy
     python3 -m pip install -r requirements.txt
+fi
 
 git checkout Graphcore
 #git checkout GraphcoreDDP
