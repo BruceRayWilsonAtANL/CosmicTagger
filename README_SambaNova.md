@@ -18,9 +18,9 @@ mkdir ~/tmp
 cd ~/DL/github.com/BruceRayWilsonAtANL/CosmicTagger
 #
 #
-#python3 -m pip install scikit-build numpy
-#python3 -m pip install -r requirements.txt
-#git checkout sambanova
+python3 -m pip install scikit-build numpy
+python3 -m pip install -r requirements.txt
+#git checkout SambaNova001
 ```
 
 ## Shell Script CPU

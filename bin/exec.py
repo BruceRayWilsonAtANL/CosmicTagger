@@ -34,7 +34,8 @@ except:
 import argparse
 from typing import List, Tuple
 #from cosmictagger.larcvio.larcv_fetcher import larcv_fetcher
-from larcvio.larcv_fetcher import larcv_fetcher
+#from larcvio.larcv_fetcher import larcv_fetcher
+from src.utils.core.larcvio.larcv_fetcher import larcv_fetcher
 
 # TODOBRW Begin This might get removed.
 from src.networks.torch.uresnet2D import UResNet
