@@ -1,5 +1,13 @@
 # README SambaNova
 
+## Run 1/24/23
+
+Use Cosmic_tagger.sh in this directory but from Rick W.
+
+
+
+
+
 ```bash
 /opt/sambaflow/apps/private/anl/cosmictagger.py \
     compile \
