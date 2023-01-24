@@ -17,6 +17,7 @@ mkdir -p /data/ANL/results/$(hostname)/${USER}/${LOGDIR}
 export OMP_NUM_THREADS=4
 #source /opt/sambaflow/apps/private/anl/venv/bin/activate
 source ~/venvs/sambanova/cosmictagger_env/bin/activate
+export PYTHONPATH=/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger
 
 #######################
 # Start script timer
