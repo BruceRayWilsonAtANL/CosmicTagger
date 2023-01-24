@@ -309,10 +309,10 @@ class exec(object):
 
             # App setup
             app_setup_event = samba.session.profiler.start_event('app_setup')
-            model, inputs, optim, metadata = app_setup(args)
+            model, inputs, optim, metadata = app_setup(self.argparseArgs)
             samba.session.profiler.end_event(app_setup_event)
 
-            if self.args.command == "compile":
+            if self.argparseArgs.command == "compile":
                 compile_event = samba.session.profiler.start_event('compile')
                 samba.session.compile(model,
                                     inputs,
@@ -323,7 +323,7 @@ class exec(object):
                                     init_output_grads=not self.args.inference,
                                     config_dict=vars(self.args),
                                     squeeze_bs_dim=True)
-        samba.session.profiler.end_event(compile_event)
+                samba.session.profiler.end_event(compile_event)
 
 
     def validate_arguments(self):
