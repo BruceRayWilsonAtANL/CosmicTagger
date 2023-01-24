@@ -1,12 +1,5 @@
 # CosmicTagger on Graphcore
 
-## Run 1/24/23
-
-Use Cosmic_tagger.sh in this directory but from Rick W.
-
-
-
-
 ## Set Up
 
 This is the contents of gc_ct_31.sh.
