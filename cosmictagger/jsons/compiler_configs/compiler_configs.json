@@ -1,0 +1,7 @@
+{
+        "prism_flags": " --threads=64  --enable-inst-group-place --bandwidth-scaling-by-stage-latency=false --disable-ec-range-check --num-sections-per-phase=256",
+	 "prefer_tbuffer_split_concat": true,
+     "arc_flags": "--maximum-group-latency-factor=1.0  --conv-box-layout-size=large_box --conv-box-layout-type=col_par ",
+	 "prism_run_args" : "--disable-ec-range-check"
+
+}
