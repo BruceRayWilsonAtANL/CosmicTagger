@@ -1,5 +1,7 @@
 # CosmicTagger on SambaNova
 
+Use Cosmic_tagger.sh from Rick W. in this directory.
+
 ## Set Up
 
 ```bash
