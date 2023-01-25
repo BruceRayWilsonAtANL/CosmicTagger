@@ -165,7 +165,6 @@ def get_image_shape(args: argparse.Namespace) -> List[int]:
                 ] + [int(i / (args.downsample_images + 1)) for i in [full_height, full_width]]
     else:
         return [args.batch_size, channels] + [int(i / (args.downsample_images + 1)) for i in [full_height, full_width]]
-    return [args.batch_size, channels] + [int(i / (args.downsample_images + 1)) for i in [full_height, full_width]]
 
 
 @consistency_test()
