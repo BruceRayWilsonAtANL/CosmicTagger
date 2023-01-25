@@ -290,7 +290,7 @@ class exec(object):
 
             # TODOBRW My initial update.
             # Arg Handler -- note: no validity checking done here
-            self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args)
+            self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
         else:
             self.argparseArgs = None
 
