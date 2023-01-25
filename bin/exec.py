@@ -126,11 +126,14 @@ def add_args(parser):
 
 
 def add_run_args(parser):
+
     # Tiling Params
-    parser.add_argument('--enable-tiling', type=bool, default=False, help='Enable DRAM tiling')
+    parser.add_argument('--enable-conv-tiling', action="store_true", help='Enable DRAM tiling')
+    parser.add_argument('--enable-stoc-rounding', action="store_true", help='Enable STOC Rounding')
 
     # Training Params
     parser.add_argument('-lr', '--learning-rate', type=float, default=0.0003, help='Initial learning rate')
+    parser.add_argument('--lr-schedule', action="store_true", help='Enable LR Scheduling')
     parser.add_argument('--loss-balance-scheme', type=str, choices=['none', 'focal', 'even', 'light'], default='focal')
     parser.add_argument('-i', '--iterations', type=int, default=100, help="Number of iterations to process")
     parser.add_argument('-m', '--compute-mode', type=str, choices=['CPU', 'RDU'], default='RDU', help="CPU or RDU")
