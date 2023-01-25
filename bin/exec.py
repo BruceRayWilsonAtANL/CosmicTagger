@@ -40,6 +40,8 @@ from src.utils.core.larcvio.larcv_fetcher import larcv_fetcher
 # TODOBRW Begin This might get removed.
 from src.networks.torch.uresnet2D import UResNet
 
+import torch.nn as nn
+
 
 def get_inputs(args: argparse.Namespace) -> Tuple[samba.SambaTensor]:
     image_shape = get_image_shape(args)
