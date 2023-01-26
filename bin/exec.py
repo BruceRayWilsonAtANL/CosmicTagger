@@ -293,6 +293,7 @@ class exec(object):
             # TODOBRW My initial update.
             # Arg Handler -- note: no validity checking done here
             self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
+            print(f'self.argparseArgs:\n{self.argparseArgs}')
         else:
             self.argparseArgs = None
 

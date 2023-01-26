@@ -13,6 +13,7 @@ source /software/sambanova/envs/sn_env.sh
 mkdir -p ~/venvs/sambanova
 rm -rf ~/venvs/sambanova/cosmictagger_env
 virtualenv ~/venvs/sambanova/cosmictagger_env
+
 source ~/venvs/sambanova/cosmictagger_env/bin/activate
 mkdir ~/tmp
 cd ~/DL/github.com/BruceRayWilsonAtANL/CosmicTagger
