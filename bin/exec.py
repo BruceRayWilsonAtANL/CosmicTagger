@@ -15,6 +15,7 @@ from hydra.core.hydra_config import HydraConfig
 from hydra.core.utils import configure_log
 
 hydra.output_subdir = None
+from pathlib import Path
 
 
 try:
@@ -72,6 +73,8 @@ from src.config.mode import ModeKind
 
 
 def add_args(parser):
+    parser.add_argument("overrides", nargs="*", default=[])
+
     # Network Params
     parser.add_argument("--model-type", type=str, default="uresnet2d", choices=["uresnet2d", "uresnet3d"])
     parser.add_argument("--use-bias", action="store_true", default=False)
@@ -281,7 +284,7 @@ class exec(object):
         self.validate_arguments()
 
         # Print the command line args to the log file:
-        logger = logging.getLogger()
+        logger = logging.geitLogger()
         logger.info("Dumping launch arguments.")
         logger.info(sys.argv)
 
@@ -352,11 +355,25 @@ class exec(object):
 
         self.args.network.data_format = self.args.data.data_format.name
 
+def getAllArgs(config_file: str):
+
+    parser = argparse.ArgumentParser()
+    add_args(parser)
+    args = parser.parse_args()
+
+    parsed = Path(config_file)
+    initialize(config_dir=str(parsed.parent), strict=False)
+    cfg = compose(parsed.name, overrides=args.overrides)
+
+    return cfg, args
 
 
 
-@hydra.main(config_path="../src/config", config_name="config")
-def main(cfg : OmegaConf) -> None:
+#atsignhydra.main(config_path="../src/config", config_name="config")
+#def main(cfg : OmegaConf) -> None:
+def main(config_file: str) -> None:
+
+    cfg, args = getAllArgs(config_file)
 
     s = exec(cfg)
 
@@ -366,4 +383,4 @@ if __name__ == '__main__':
     import sys
     if "--help" not in sys.argv and "--hydra-help" not in sys.argv:
         sys.argv += ['hydra/job_logging=disabled']
-    main()
+    main("conf/config.yaml")
