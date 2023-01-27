@@ -268,9 +268,42 @@ def app_setup(args):
 
 class exec(object):
 
-    def __init__(self, config):
+    def __init__(self, config_file):
 
-        self.args = config
+        if self.args.run.compute_mode == ComputeMode.RDU:
+            sn_utils.set_seed(0)
+            # TODOBRW my version
+            #self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
+
+            # TODOBRW My initial update.
+            # Arg Handler -- note: no validity checking done here
+            self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
+            print(f'self.argparseArgs:\n{self.argparseArgs}')
+
+
+            parsed = Path(config_file)
+            initialize(config_dir=str(parsed.parent), strict=False)
+            config = compose(parsed.name, overrides=self.argparseArgs.overrides)
+
+            self.args = config
+
+        else:
+            self.argparseArgs = None
+
+            #atsignhydra.main(config_path="../src/config", config_name="config")
+
+            # initialize(version_base=None, config_path="conf")
+            # cfg = compose("config.yaml", overrides=["db=mysql", "db.user=${oc.env:USER}"])
+
+
+            parsed = Path(config_file)
+            initialize(config_dir=str(parsed.parent), config_name="config", strict=False)
+            config = compose(parsed.name, overrides=self.argparseArgs.overrides)
+
+            self.args = config
+
+            self.argparseArgs = None
+
 
         rank = self.init_mpi()
 
@@ -287,18 +320,6 @@ class exec(object):
         logger = logging.geitLogger()
         logger.info("Dumping launch arguments.")
         logger.info(sys.argv)
-
-        if self.args.run.compute_mode == ComputeMode.RDU:
-            sn_utils.set_seed(0)
-            # TODOBRW my version
-            #self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
-
-            # TODOBRW My initial update.
-            # Arg Handler -- note: no validity checking done here
-            self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
-            print(f'self.argparseArgs:\n{self.argparseArgs}')
-        else:
-            self.argparseArgs = None
 
 
 
@@ -373,9 +394,9 @@ def getAllArgs(config_file: str):
 #def main(cfg : OmegaConf) -> None:
 def main(config_file: str) -> None:
 
-    cfg, args = getAllArgs(config_file)
+    #cfg, args = getAllArgs(config_file)
 
-    s = exec(cfg)
+    s = exec(config_file)
 
 
 if __name__ == '__main__':
