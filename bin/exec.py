@@ -279,7 +279,8 @@ class exec(object):
 
             # TODOBRW My initial update.
             # Arg Handler -- note: no validity checking done here
-            self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
+            argv = sys.argv
+            self.argparseArgs = parse_app_args(argv=argv, common_parser_fn=add_args)
             print(f'self.argparseArgs:\n{self.argparseArgs}')
 
 
@@ -378,17 +379,17 @@ class exec(object):
 
         self.args.network.data_format = self.args.data.data_format.name
 
-def getAllArgs(config_file: str):
+# def getAllArgs(config_file: str):
 
-    parser = argparse.ArgumentParser()
-    add_args(parser)
-    args = parser.parse_args()
+#     parser = argparse.ArgumentParser()
+#     add_args(parser)
+#     args = parser.parse_args()
 
-    parsed = Path(config_file)
-    initialize(config_dir=str(parsed.parent), strict=False)
-    cfg = compose(parsed.name, overrides=args.overrides)
+#     parsed = Path(config_file)
+#     initialize(config_dir=str(parsed.parent), strict=False)
+#     cfg = compose(parsed.name, overrides=args.overrides)
 
-    return cfg, args
+#     return cfg, args
 
 
 
