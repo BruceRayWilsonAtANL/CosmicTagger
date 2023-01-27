@@ -10,8 +10,8 @@ import numpy
 # For configuration:
 from omegaconf import DictConfig, OmegaConf
 import hydra
-from hydra.experimental import compose
-from hydra.experimental import initialize as heinitialize
+from hydra import compose
+from hydra import initialize as heinitialize
 from hydra.core.hydra_config import HydraConfig
 from hydra.core.utils import configure_log
 
@@ -291,7 +291,10 @@ class exec(object):
             heinitialize(config_path=parsedStr)
             parsedNameStr = parsed.name
             parsedNameStr = str(parsed.name)
-            config = compose(parsedNameStr, overrides=self.argparseArgs.overrides)
+            #config = compose(parsedNameStr, overrides=self.argparseArgs.overrides)
+            overrides = ["mode=train", "run.id=run_id", "run.distributed=False", "data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/", "data.downsample=0", "framework=torch", "run.compute_mode=CPU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
+
+            config = compose(parsedNameStr, overrides=overrides)
 
             self.args = config
 
@@ -325,7 +328,7 @@ class exec(object):
         self.validate_arguments()
 
         # Print the command line args to the log file:
-        logger = logging.geitLogger()
+        logger = logging.getLogger()
         logger.info("Dumping launch arguments.")
         logger.info(sys.argv)
 
@@ -336,7 +339,8 @@ class exec(object):
 
 
 
-        if self.args.run.compute_mode == ComputeMode.RDU:
+        #if self.args.run.compute_mode == ComputeMode.RDU:
+        if RDU:
 
             # Instantiate samba profiler.
             # We gate this by run_benchmark to avoid profiler overhead if we are
@@ -362,6 +366,42 @@ class exec(object):
                                     config_dict=vars(self.args),
                                     squeeze_bs_dim=True)
                 samba.session.profiler.end_event(compile_event)
+
+    def init_mpi(self):
+        if not self.args.run.distributed:
+            return 0
+        else:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+            return comm.Get_rank()
+
+    def configure_logger(self, rank):
+
+        logger = logging.getLogger()
+
+        # Create a handler for STDOUT, but only on the root rank.
+        # If not distributed, we still get 0 passed in here.
+        if rank == 0:
+            stream_handler = logging.StreamHandler(sys.stdout)
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+            stream_handler.setFormatter(formatter)
+            handler = handlers.MemoryHandler(capacity = 0, target=stream_handler)
+            logger.addHandler(handler)
+
+            # Add a file handler too:
+            log_file = self.args.output_dir + "/process.log"
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setFormatter(formatter)
+            file_handler = handlers.MemoryHandler(capacity=10, target=file_handler)
+            logger.addHandler(file_handler)
+
+            logger.setLevel(logging.INFO)
+        else:
+            # in this case, MPI is available but it's not rank 0
+            # create a null handler
+            handler = logging.NullHandler()
+            logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
 
 
     def validate_arguments(self):
@@ -412,4 +452,4 @@ if __name__ == '__main__':
     import sys
     if "--help" not in sys.argv and "--hydra-help" not in sys.argv:
         sys.argv += ['hydra/job_logging=disabled']
-    main("conf/config.yaml")
+    main("../src/config/config.yaml")
