@@ -10,7 +10,8 @@ import numpy
 # For configuration:
 from omegaconf import DictConfig, OmegaConf
 import hydra
-from hydra.experimental import compose, initialize
+from hydra.experimental import compose
+from hydra.experimental import initialize as heinitialize
 from hydra.core.hydra_config import HydraConfig
 from hydra.core.utils import configure_log
 
@@ -285,7 +286,7 @@ class exec(object):
 
 
             parsed = Path(config_file)
-            #initialize(config_dir=str(parsed.parent), strict=False)
+            heinitialize(config_dir=str(parsed.parent), strict=False)
             config = compose(parsed.name, overrides=self.argparseArgs.overrides)
 
             self.args = config
