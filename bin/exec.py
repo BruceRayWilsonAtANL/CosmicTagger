@@ -270,7 +270,9 @@ class exec(object):
 
     def __init__(self, config_file):
 
-        if self.args.run.compute_mode == ComputeMode.RDU:
+        RDU = True
+        # if self.args.run.compute_mode == ComputeMode.RDU:
+        if RDU:
             sn_utils.set_seed(0)
             # TODOBRW my version
             #self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
