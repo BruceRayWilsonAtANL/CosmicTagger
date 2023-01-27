@@ -286,8 +286,12 @@ class exec(object):
 
 
             parsed = Path(config_file)
-            heinitialize(config_dir=str(parsed.parent), strict=False)
-            config = compose(parsed.name, overrides=self.argparseArgs.overrides)
+            parsedStr = str(parsed)
+            parsedStr = str(parsed.parent)
+            heinitialize(config_path=parsedStr, strict=False)
+            parsedNameStr = parsed.name
+            parsedNameStr = str(parsed.name)
+            config = compose(parsedNameStr, overrides=self.argparseArgs.overrides)
 
             self.args = config
 
@@ -301,7 +305,7 @@ class exec(object):
 
 
             parsed = Path(config_file)
-            initialize(config_dir=str(parsed.parent), config_name="config", strict=False)
+            heinitialize(config_dir=str(parsed.parent), config_name="config", strict=False)
             config = compose(parsed.name, overrides=self.argparseArgs.overrides)
 
             self.args = config
