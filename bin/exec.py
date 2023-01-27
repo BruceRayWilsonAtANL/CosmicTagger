@@ -285,7 +285,7 @@ class exec(object):
 
 
             parsed = Path(config_file)
-            initialize(config_dir=str(parsed.parent), strict=False)
+            #initialize(config_dir=str(parsed.parent), strict=False)
             config = compose(parsed.name, overrides=self.argparseArgs.overrides)
 
             self.args = config
