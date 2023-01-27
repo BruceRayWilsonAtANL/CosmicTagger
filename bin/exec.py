@@ -288,7 +288,7 @@ class exec(object):
             parsed = Path(config_file)
             parsedStr = str(parsed)
             parsedStr = str(parsed.parent)
-            heinitialize(config_path=parsedStr, strict=False)
+            heinitialize(config_path=parsedStr)
             parsedNameStr = parsed.name
             parsedNameStr = str(parsed.name)
             config = compose(parsedNameStr, overrides=self.argparseArgs.overrides)
