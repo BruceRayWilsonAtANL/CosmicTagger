@@ -33,6 +33,7 @@ echo "Machine State Before: " >> ${OUTPUT_PATH} 2>&1
 
 if [ ! -e ${OUTDIR}/cosmictagger/cosmictagger.pef ] ; then
   echo "COMPILE START AT ${SECONDS}" >> ${OUTPUT_PATH} 2>&1
+  COMMAND="python -m pdb /home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/bin/exec.py compile +enable-stoc-rounding +enable-conv-tiling +compiler-configs-file /opt/sambaflow/apps/private/anl/cosmictagger/jsons/compiler_configs/compiler_configs.json +mac-human-decision /opt/sambaflow/apps/private/anl/cosmictagger/jsons/hd_files/cosmic_uresnet3d.json +residual +batch-size 4 +data-parallel -ws 2 +num-tiles=4 +model-type uresnet3d +downsampling convolutional +upsampling convolutional +connections concat +run-benchmark +pef-name=cosmictagger +output-folder=${OUTDIR} +blocks-final 5"
   COMMAND="python /home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/bin/exec.py compile --enable-stoc-rounding --enable-conv-tiling --compiler-configs-file /opt/sambaflow/apps/private/anl/cosmictagger/jsons/compiler_configs/compiler_configs.json --mac-human-decision /opt/sambaflow/apps/private/anl/cosmictagger/jsons/hd_files/cosmic_uresnet3d.json --residual --batch-size 4 --data-parallel -ws 2 --num-tiles=4 --model-type uresnet3d --downsampling convolutional --upsampling convolutional --connections concat --run-benchmark --pef-name=cosmictagger --output-folder=${OUTDIR} --blocks-final 5"
 
   echo "COMPILE COMMAND: $COMMAND" >> ${OUTPUT_PATH} 2>&1

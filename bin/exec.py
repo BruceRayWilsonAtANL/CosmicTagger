@@ -41,6 +41,7 @@ from src.utils.core.larcvio.larcv_fetcher import larcv_fetcher
 
 # TODOBRW Begin This might get removed.
 from src.networks.torch.uresnet2D import UResNet
+from src.networks.torch.uresnet3D import UResNet3D
 
 import torch.nn as nn
 
@@ -224,7 +225,7 @@ def test(args: argparse.Namespace, model: nn.Module, inputs: Tuple[samba.SambaTe
     return output_vars
 
 
-def app_setup(args):
+def app_setup(argparseArgs, hydraArgs):
     """
         Sets up app before mode based flows. This includes:
         1. samba-specific setup (stochartic rounding, conv tiling)
@@ -233,36 +234,59 @@ def app_setup(args):
            we don't need to go through the setup overhead before inference
     """
     # Stochastic Rounding
-    if args.enable_stoc_rounding:
+    if argparseArgs.enable_stoc_rounding:
         enable_conv_grad_accum_stoc()
         enable_addbias_grad_accum_stoc()
     else:
         disable_sgd_stoc()
 
+    assert hydraArgs.framework.name == "torch"
+    # Begin from trainercore.__init__()
+    if hydraArgs.framework.name == "torch":
+        sparse = hydraArgs.framework.sparse
+        io_dataformat = "channels_first"
+    else:
+        sparse = False
+
+    _larcv_fetcher = larcv_fetcher(
+        mode        = hydraArgs.mode.name.name,
+        distributed = hydraArgs.run.distributed,
+        downsample  = hydraArgs.data.downsample,
+        # dataformat  = hydraArgs.data.data_format.name,
+        dataformat  = io_dataformat,
+        synthetic   = hydraArgs.data.synthetic,
+        sparse      = sparse )
+    # End from trainercore.__init__()
+
+
+
+
     # Instantiate model
-    if args.model_type == "uresnet3d":
-        model = UResNet3D(args)
+    if argparseArgs.model_type == "uresnet3d":
+        # model = UResNet3D(args)
+        model = UResNet3D(hydraArgs.network, _larcv_fetcher.image_size())
     else:
         model = UResNet(args)
+
     model.bfloat16()
     samba.from_torch_model_(model)
 
     # Dummy inputs required for tracing.
-    inputs = get_inputs(args)
+    inputs = get_inputs(argparseArgs)
 
     # Inference handling
-    if args.inference:
+    if argparseArgs.inference:
         model.eval()
 
     # Conv Tiling
     metadata = dict()
-    if args.enable_conv_tiling:
+    if argparseArgs.enable_conv_tiling:
         original_size = inputs[0].shape
         metadata[ConvTilingMetadata.key] = ConvTilingMetadata(original_size=original_size)
 
     # Instantiate optimizer
     optim = samba.optim.AdamW(model.parameters(), lr=1.0, betas=(0.9,
-                                                                 0.997), weight_decay=0) if not args.inference else None
+                                                                 0.997), weight_decay=0) if not argparseArgs.inference else None
 
     return model, inputs, optim, metadata
 
@@ -351,7 +375,7 @@ class exec(object):
 
             # App setup
             app_setup_event = samba.session.profiler.start_event('app_setup')
-            model, inputs, optim, metadata = app_setup(self.argparseArgs)
+            model, inputs, optim, metadata = app_setup(self.argparseArgs, self.args)
             samba.session.profiler.end_event(app_setup_event)
 
             if self.argparseArgs.command == "compile":
