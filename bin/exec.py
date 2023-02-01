@@ -249,7 +249,7 @@ def app_setup(argparseArgs, hydraArgs):
         # model = UResNet3D(args)
         model = UResNet3D(hydraArgs.network, _larcv_fetcher.image_size())
     else:
-        model = UResNet(args)
+        model = UResNet(hydraArgs.network)
 
     model.bfloat16()
     samba.from_torch_model_(model)
@@ -299,15 +299,13 @@ class exec(object):
             parsedNameStr = parsed.name
             parsedNameStr = str(parsed.name)
             #config = compose(parsedNameStr, overrides=self.argparseArgs.overrides)
-            overrides = ["mode=train", "run.id=run_id", "run.distributed=False", "data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/", "data.downsample=0", "framework=torch", "run.compute_mode=RDU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
+            overrides = ["mode=train", "run.id=run_id", "run.distributed=False", "data.data_directory=/nvmedata/ANL/cosmictagger/", "data.downsample=0", "framework=torch", "run.compute_mode=RDU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
 
             config = compose(parsedNameStr, overrides=overrides)
 
             self.hydraArgs = config
 
         else:
-            self.argparseArgs = None
-
             #atsignhydra.main(config_path="../src/config", config_name="config")
 
             # initialize(version_base=None, config_path="conf")
@@ -315,8 +313,9 @@ class exec(object):
 
 
             parsed = Path(config_file)
-            heinitialize(config_dir=str(parsed.parent), config_name="config", strict=False)
-            config = compose(parsed.name, overrides=self.argparseArgs.overrides)
+            heinitialize(config_path=str(parsed.parent))
+            overrides = ["mode=train", "run.id=run_id", "run.distributed=False", "data.data_directory=/nvmedata/ANL/cosmictagger/", "data.downsample=0", "framework=torch", "run.compute_mode=CPU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
+            config = compose(parsed.name, overrides=overrides)
 
             self.hydraArgs = config
 
@@ -338,14 +337,6 @@ class exec(object):
         logger = logging.getLogger()
         logger.info("Dumping launch arguments.")
         logger.info(sys.argv)
-
-
-        # if config.mode.name == ModeKind.train:
-        #     self.train()
-        # if config.mode.name == ModeKind.iotest:
-        #     self.iotest()
-        # if config.mode.name == ModeKind.inference:
-        #     self.inference()
 
         #if self.args.run.compute_mode == ComputeMode.RDU:
         if RDU:
@@ -374,6 +365,14 @@ class exec(object):
                                     config_dict=vars(self.argparseArgs),
                                     squeeze_bs_dim=True)
                 samba.session.profiler.end_event(compile_event)
+
+
+        if config.mode.name == ModeKind.train:
+            self.train()
+        if config.mode.name == ModeKind.iotest:
+            self.iotest()
+        if config.mode.name == ModeKind.inference:
+            self.inference()
 
     def init_mpi(self):
         if not self.hydraArgs.run.distributed:
@@ -436,7 +435,7 @@ class exec(object):
 
         self.trainer.initialize(io_only=True)
 
-        if self.args.run.distributed:
+        if self.hydraArgs.run.distributed:
             from mpi4py import MPI
             rank = MPI.COMM_WORLD.Get_rank()
         else:
@@ -445,7 +444,7 @@ class exec(object):
         # label_stats = numpy.zeros((36,))
         global_start = time.time()
         time.sleep(0.1)
-        for i in range(self.args.run.iterations):
+        for i in range(self.hydraArgs.run.iterations):
             start = time.time()
             mb = self.trainer.larcv_fetcher.fetch_next_batch("train", force_pop=True)
 
@@ -454,24 +453,24 @@ class exec(object):
             logger.info(f"{i}: Time to fetch a minibatch of data: {end - start:.2f}s")
 
         total_time = time.time() - global_start
-        images_read = self.args.run.iterations * self.args.run.minibatch_size
+        images_read = self.hydraArgs.run.iterations * self.hydraArgs.run.minibatch_size
         logger.info(f"Total IO Time: {total_time:.2f}s")
-        logger.info(f"Total images read per batch: {self.args.run.minibatch_size}")
+        logger.info(f"Total images read per batch: {self.hydraArgs.run.minibatch_size}")
         logger.info(f"Average Image IO Throughput: { images_read / total_time:.3f}")
 
     def make_trainer(self):
 
 
-        if 'environment_variables' in self.args.framework:
-            for env in self.args.framework.environment_variables.keys():
-                os.environ[env] = self.args.framework.environment_variables[env]
+        if 'environment_variables' in self.hydraArgs.framework:
+            for env in self.hydraArgs.framework.environment_variables.keys():
+                os.environ[env] = self.hydraArgs.framework.environment_variables[env]
 
-        if self.args.mode.name == ModeKind.iotest:
+        if self.hydraArgs.mode.name == ModeKind.iotest:
             from src.utils.core import trainercore
-            self.trainer = trainercore.trainercore(self.args)
+            self.trainer = trainercore.trainercore(self.hydraArgs)
             return
 
-        if self.args.framework.name == "tensorflow":
+        if self.hydraArgs.framework.name == "tensorflow":
 
             import logging
             logging.getLogger('tensorflow').setLevel(logging.FATAL)
@@ -483,27 +482,27 @@ class exec(object):
             import tensorflow as tf
 
             if tf.__version__.startswith("2"):
-                if self.args.run.distributed:
+                if self.hydraArgs.run.distributed:
                     from src.utils.tensorflow2 import distributed_trainer
-                    self.trainer = distributed_trainer.distributed_trainer(self.args)
+                    self.trainer = distributed_trainer.distributed_trainer(self.hydraArgs)
                 else:
                     from src.utils.tensorflow2 import trainer
-                    self.trainer = trainer.tf_trainer(self.args)
+                    self.trainer = trainer.tf_trainer(self.hydraArgs)
             else:
-                if self.args.run.distributed:
+                if self.hydraArgs.run.distributed:
                     from src.utils.tensorflow1 import distributed_trainer
-                    self.trainer = distributed_trainer.distributed_trainer(self.args)
+                    self.trainer = distributed_trainer.distributed_trainer(self.hydraArgs)
                 else:
                     from src.utils.tensorflow1 import trainer
-                    self.trainer = trainer.tf_trainer(self.args)
+                    self.trainer = trainer.tf_trainer(self.hydraArgs)
 
-        elif self.args.framework.name == "torch":
-            if self.args.run.distributed:
+        elif self.hydraArgs.framework.name == "torch":
+            if self.hydraArgs.run.distributed:
                 from src.utils.torch import distributed_trainer
-                self.trainer = distributed_trainer.distributed_trainer(self.args)
+                self.trainer = distributed_trainer.distributed_trainer(self.hydraArgs)
             else:
                 from src.utils.torch import trainer
-                self.trainer = trainer.torch_trainer(self.args)
+                self.trainer = trainer.torch_trainer(self.hydraArgs)
 
 
     def inference(self):
@@ -547,7 +546,7 @@ class exec(object):
     def __str__(self):
 
         s = "\n\n-- CONFIG --\n"
-        substring = s +  self.dictionary_to_str(self.args)
+        substring = s +  self.dictionary_to_str(self.hydraArgs)
 
         return substring
 
