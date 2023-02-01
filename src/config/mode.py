@@ -41,7 +41,6 @@ class IOTest(Mode):
 @dataclass
 class Compile(Mode):
     name: ModeKind = ModeKind.compile
-    [ other compile specific args ]
 
 cs = ConfigStore.instance()
 cs.store(group="mode", name="train",     node=Train)
