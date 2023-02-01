@@ -10,6 +10,7 @@ class ModeKind(Enum):
     train     = 0
     iotest    = 1
     inference = 2
+    compile   = 3
 
 @dataclass
 class Mode:

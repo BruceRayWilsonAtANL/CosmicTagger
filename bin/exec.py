@@ -285,7 +285,7 @@ class exec(object):
             # TODOBRW my version
             #self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
 
-            # TODOBRW My initial update.
+            # TODOBRW My update.
             # Arg Handler -- note: no validity checking done here
             argv = sys.argv[1:]
             self.argparseArgs = parse_app_args(argv=argv, common_parser_fn=add_args)
@@ -293,15 +293,9 @@ class exec(object):
 
 
             parsed = Path(config_file)
-            parsedStr = str(parsed)
-            parsedStr = str(parsed.parent)
-            heinitialize(config_path=parsedStr)
-            parsedNameStr = parsed.name
-            parsedNameStr = str(parsed.name)
-            #config = compose(parsedNameStr, overrides=self.argparseArgs.overrides)
+            heinitialize(config_path=str(parsed.parent))
             overrides = ["mode=train", "run.id=run_id", "run.distributed=False", "data.data_directory=/nvmedata/ANL/cosmictagger/", "data.downsample=0", "framework=torch", "run.compute_mode=RDU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
-
-            config = compose(parsedNameStr, overrides=overrides)
+            config = compose(parsed.name, overrides=overrides)
 
             self.hydraArgs = config
 
@@ -373,6 +367,8 @@ class exec(object):
             self.iotest()
         if config.mode.name == ModeKind.inference:
             self.inference()
+        if config.mode.name == ModeKind.compile:
+            self.compile()
 
     def init_mpi(self):
         if not self.hydraArgs.run.distributed:
@@ -409,6 +405,11 @@ class exec(object):
             handler = logging.NullHandler()
             logger.addHandler(handler)
             logger.setLevel(logging.INFO)
+
+
+    def compile(self):
+        return
+
 
 
     def train(self):
