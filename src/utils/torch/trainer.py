@@ -107,7 +107,7 @@ class torch_trainer(trainercore):
         with self.default_device_context():
             self.init_network()
 
-
+            # TODOBRW
             self._net = self._net.to(self.default_device())
 
             # self._net.to(device)
@@ -123,6 +123,7 @@ class torch_trainer(trainercore):
 
             self.restore_model()
 
+            # TODOBRW
             # If using half precision on the model, convert it now:
             if self.args.run.precision == Precision.bfloat16:
                 self._net = self._net.bfloat16()
