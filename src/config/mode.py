@@ -38,7 +38,13 @@ class IOTest(Mode):
     name:   ModeKind = ModeKind.iotest
     start_index: int = 0
 
+@dataclass
+class Compile(Mode):
+    name: ModeKind = ModeKind.compile
+    [ other compile specific args ]
+
 cs = ConfigStore.instance()
 cs.store(group="mode", name="train",     node=Train)
 cs.store(group="mode", name="inference", node=Inference)
 cs.store(group="mode", name="iotest",    node=IOTest)
+cs.store(group="mode", name="compile",   node=Compile)

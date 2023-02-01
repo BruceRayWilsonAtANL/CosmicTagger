@@ -278,88 +278,12 @@ class exec(object):
 
     def __init__(self, config_file):
 
-        RDU = True
-        # if self.args.run.compute_mode == ComputeMode.RDU:
-        if RDU:
-            sn_utils.set_seed(0)
-            # TODOBRW my version
-            #self.argparseArgs = parse_app_args(argv=sys.argv, common_parser_fn=add_args, run_parser_fn=add_run_args)
+        parsed = Path(config_file)
+        heinitialize(config_path=str(parsed.parent))
+        overrides = ["mode=compile", "run.id=run_id", "run.distributed=False", "data.data_directory=/nvmedata/ANL/cosmictagger/", "data.downsample=0", "framework=torch", "run.compute_mode=CPU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
+        config = compose(parsed.name, overrides=overrides)
 
-            # TODOBRW My update.
-            # Arg Handler -- note: no validity checking done here
-            argv = sys.argv[1:]
-            self.argparseArgs = parse_app_args(argv=argv, common_parser_fn=add_args)
-            print(f'self.argparseArgs:\n{self.argparseArgs}')
-
-
-            parsed = Path(config_file)
-            heinitialize(config_path=str(parsed.parent))
-            overrides = ["mode=train", "run.id=run_id", "run.distributed=False", "data.data_directory=/nvmedata/ANL/cosmictagger/", "data.downsample=0", "framework=torch", "run.compute_mode=RDU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
-            config = compose(parsed.name, overrides=overrides)
-
-            self.hydraArgs = config
-
-        else:
-            #atsignhydra.main(config_path="../src/config", config_name="config")
-
-            # initialize(version_base=None, config_path="conf")
-            # cfg = compose("config.yaml", overrides=["db=mysql", "db.user=${oc.env:USER}"])
-
-
-            parsed = Path(config_file)
-            heinitialize(config_path=str(parsed.parent))
-            overrides = ["mode=train", "run.id=run_id", "run.distributed=False", "data.data_directory=/nvmedata/ANL/cosmictagger/", "data.downsample=0", "framework=torch", "run.compute_mode=CPU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
-            config = compose(parsed.name, overrides=overrides)
-
-            self.hydraArgs = config
-
-            self.argparseArgs = None
-
-
-        rank = self.init_mpi()
-
-        # Create the output directory if needed:
-        if rank == 0:
-            outpath = pathlib.Path(self.hydraArgs.output_dir)
-            outpath.mkdir(exist_ok=True, parents=True)
-
-        self.configure_logger(rank)
-
-        self.validate_arguments()
-
-        # Print the command line args to the log file:
-        logger = logging.getLogger()
-        logger.info("Dumping launch arguments.")
-        logger.info(sys.argv)
-
-        #if self.args.run.compute_mode == ComputeMode.RDU:
-        if RDU:
-
-            # Instantiate samba profiler.
-            # We gate this by run_benchmark to avoid profiler overhead if we are
-            # not using the samba profiler. Note: profiler start_event and end_event
-            # have minimal overhead and don't need to be gated.
-            if self.argparseArgs.run_benchmark:
-                samba.session.start_samba_profile()
-
-            # App setup
-            app_setup_event = samba.session.profiler.start_event('app_setup')
-            model, inputs, optim, metadata = app_setup(self.argparseArgs, self.hydraArgs)
-            samba.session.profiler.end_event(app_setup_event)
-
-            if self.argparseArgs.command == "compile":
-                compile_event = samba.session.profiler.start_event('compile')
-                samba.session.compile(model,
-                                    inputs,
-                                    optim,
-                                    name='uresnet',
-                                    app_dir=sn_utils.get_file_dir(__file__),
-                                    metadata=metadata,
-                                    init_output_grads=not self.argparseArgs.inference,
-                                    config_dict=vars(self.argparseArgs),
-                                    squeeze_bs_dim=True)
-                samba.session.profiler.end_event(compile_event)
-
+        self.hydraArgs = config
 
         if config.mode.name == ModeKind.train:
             self.train()
@@ -408,7 +332,59 @@ class exec(object):
 
 
     def compile(self):
-        return
+
+        if self.hydraArgs.run.compute_mode == ComputeMode.RDU:
+            sn_utils.set_seed(0)
+            # Arg Handler -- note: no validity checking done here
+            argv = sys.argv[1:]
+            self.argparseArgs = parse_app_args(argv=argv, common_parser_fn=add_args)
+            print(f'self.argparseArgs:\n{self.argparseArgs}')
+
+        else:
+            self.argparseArgs = None
+
+        rank = self.init_mpi()
+
+        # Create the output directory if needed:
+        if rank == 0:
+            outpath = pathlib.Path(self.hydraArgs.output_dir)
+            outpath.mkdir(exist_ok=True, parents=True)
+
+        self.configure_logger(rank)
+
+        self.validate_arguments()
+
+        # Print the command line args to the log file:
+        logger = logging.getLogger()
+        logger.info("Dumping launch arguments.")
+        logger.info(sys.argv)
+
+        if self.hydraArgs.run.compute_mode == ComputeMode.RDU:
+
+            # Instantiate samba profiler.
+            # We gate this by run_benchmark to avoid profiler overhead if we are
+            # not using the samba profiler. Note: profiler start_event and end_event
+            # have minimal overhead and don't need to be gated.
+            if self.argparseArgs.run_benchmark:
+                samba.session.start_samba_profile()
+
+            # App setup
+            app_setup_event = samba.session.profiler.start_event('app_setup')
+            model, inputs, optim, metadata = app_setup(self.argparseArgs, self.hydraArgs)
+            samba.session.profiler.end_event(app_setup_event)
+
+            if self.argparseArgs.command == "compile":
+                compile_event = samba.session.profiler.start_event('compile')
+                samba.session.compile(model,
+                                    inputs,
+                                    optim,
+                                    name='uresnet',
+                                    app_dir=sn_utils.get_file_dir(__file__),
+                                    metadata=metadata,
+                                    init_output_grads=not self.argparseArgs.inference,
+                                    config_dict=vars(self.argparseArgs),
+                                    squeeze_bs_dim=True)
+                samba.session.profiler.end_event(compile_event)
 
 
 
