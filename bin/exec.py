@@ -277,10 +277,22 @@ def app_setup(argparseArgs, hydraArgs):
 class exec(object):
 
     def __init__(self, config_file):
+        # Arg Handler -- note: no validity checking done here
+        argv = sys.argv[1:]
+        self.argparseArgs = parse_app_args(argv=argv, common_parser_fn=add_args)
+        print(f'self.argparseArgs:\n{self.argparseArgs}')
 
         parsed = Path(config_file)
         heinitialize(config_path=str(parsed.parent))
-        overrides = ["mode=compile", "run.id=run_id", "run.distributed=False", "data.data_directory=/nvmedata/ANL/cosmictagger/", "data.downsample=0", "framework=torch", "run.compute_mode=CPU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
+
+        # TODOBRW is command the correct argument?  It should be.  I looked at the dump of the args in a log.
+        if self.argparseArgs.command == 'compile':
+            overrides = ["mode=compile", "run.id=run_id", "run.distributed=False", "data.data_directory=/nvmedata/ANL/cosmictagger/", "data.downsample=0", "framework=torch", "run.compute_mode=CPU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
+        elif self.argparseArgs.command == 'run':
+            overrides = ["mode=train", "run.id=run_id", "run.distributed=False", "data.data_directory=/nvmedata/ANL/cosmictagger/", "data.downsample=0", "framework=torch", "run.compute_mode=CPU", "run.minibatch_size=1", "run.iterations=1", "run.precision=3"]
+        else:
+            assert False
+
         config = compose(parsed.name, overrides=overrides)
 
         self.hydraArgs = config
@@ -335,11 +347,6 @@ class exec(object):
 
         if self.hydraArgs.run.compute_mode == ComputeMode.RDU:
             sn_utils.set_seed(0)
-            # Arg Handler -- note: no validity checking done here
-            argv = sys.argv[1:]
-            self.argparseArgs = parse_app_args(argv=argv, common_parser_fn=add_args)
-            print(f'self.argparseArgs:\n{self.argparseArgs}')
-
         else:
             self.argparseArgs = None
 
@@ -395,10 +402,40 @@ class exec(object):
         logger.info("Running Training")
         logger.info(self.__str__())
 
-        self.make_trainer()
+        if self.hydraArgs.run.compute_mode == ComputeMode.RDU:
+            args = self.argparseArgs
 
-        self.trainer.initialize()
-        self.trainer.batch_process()
+            # App setup
+            app_setup_event = samba.session.profiler.start_event('app_setup')
+            model, inputs, optim, metadata = app_setup(args)
+            samba.session.profiler.end_event(app_setup_event)
+
+            run_event = samba.session.profiler.start_event('run')
+
+            trace_graph_event = samba.session.profiler.start_event('trace_graph')
+            sn_utils.trace_graph(model,
+                                inputs,
+                                optim,
+                                init_output_grads=not args.inference,
+                                pef=args.pef,
+                                mapping=args.mapping)
+            samba.session.profiler.end_event(trace_graph_event)
+
+            trainer = CosmicTrainer(args, model, optim)
+            training_event = samba.session.profiler.start_event('training')
+            trainer.train()
+            samba.session.profiler.end_event(training_event)
+
+            samba.session.profiler.end_event(run_event)
+
+
+
+        else:
+
+            self.make_trainer()
+
+            self.trainer.initialize()
+            self.trainer.batch_process()
 
 
     def iotest(self):
