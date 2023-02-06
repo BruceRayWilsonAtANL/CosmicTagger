@@ -14,10 +14,8 @@ do
     run.id=${name} \
     run.distributed=False \
     data=real \
-    data.data_directory=/lambda_stor/data/datascience/cosmic_tagging/ \
+    data.data_directory=/mnt/localdata/datascience/cosmic_tagging/ \
     framework=torch \
     run.compute_mode=IPU \
-    run.minibatch_size=2 \
-    run.iterations=10 \
     run.precision=3
 done
