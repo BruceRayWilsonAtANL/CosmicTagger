@@ -1,0 +1,126 @@
+diff --git a/src/config/config.py b/src/config/config.py
+index b060114..458ae72 100644
+--- a/src/config/config.py
++++ b/src/config/config.py
+@@ -15,6 +15,7 @@ class ComputeMode(Enum):
+     GPU   = 1
+     DPCPP = 2
+     XPU   = 3
++    HPU   = 4
+ 
+ class Precision(Enum):
+     float32  = 0
+@@ -40,6 +41,7 @@ class Run:
+     id:                 str         = MISSING
+     precision:          Precision   = Precision.float32
+     profile:            bool        = False
++    lazy_mode:          bool        = True
+ 
+ cs = ConfigStore.instance()
+ 
+diff --git a/src/utils/torch/trainer.py b/src/utils/torch/trainer.py
+index 6a0f153..72a56d5 100644
+--- a/src/utils/torch/trainer.py
++++ b/src/utils/torch/trainer.py
+@@ -104,6 +104,18 @@ class torch_trainer(trainercore):
+         if self.is_training():
+             self.build_lr_schedule()
+ 
++        if self.args.run.compute_mode == ComputeMode.HPU:
++            from habana_frameworks.torch.utils.library_loader import load_habana_module
++            load_habana_module()
++
++            if self.args.run.lazy_mode:
++                import habana_frameworks.torch.core as htcore
++                self.htcore = htcore
++                os.environ["PT_HPU_LAZY_MODE"]="1"
++            else:
++                # Enable Eager Mode
++                os.environ["PT_HPU_LAZY_MODE"]="2"
++
+         with self.default_device_context():
+             self.init_network()
+ 
+@@ -621,6 +633,8 @@ class torch_trainer(trainercore):
+             device = torch.device("xpu")
+         # elif self.args.run.compute_mode == "DPCPP":
+         #     device = torch.device("dpcpp")
++        elif self.args.run.compute_mode == ComputeMode.HPU:
++            device = torch.device("hpu")
+         else:
+             device = torch.device('cpu')
+         return device
+@@ -761,6 +775,8 @@ class torch_trainer(trainercore):
+                         else:
+                             loss.backward()
+ 
++                    if self.args.run.compute_mode == ComputeMode.HPU and self.args.run.lazy_mode:
++                        self.htcore.mark_step()
+ 
+                     # Compute any necessary metrics:
+                     with self.timing_context("metrics"):
+@@ -804,6 +820,9 @@ class torch_trainer(trainercore):
+                 else:
+                     self._opt.step()
+ 
++                if self.args.run.compute_mode == ComputeMode.HPU and self.args.run.lazy_mode:
++                    self.htcore.mark_step()
++
+                 self.lr_scheduler.step()
+ 
+             if verbose: logger.debug("Updated Weights")
+@@ -844,32 +863,32 @@ class torch_trainer(trainercore):
+         # Validation steps can optionally accumulate over several minibatches, to
+         # fit onto a gpu or other accelerator
+         if self._global_step != 0 and self._global_step % self.args.run.aux_iterations == 0:
++            with torch.no_grad():
++                self._net.eval()
++                if self.args.run.compute_mode == ComputeMode.CPU:
++                    # Quantization not supported on CUDA
++                    val_net = torch.quantization.convert(self._net)
++                else:
++                    val_net = self._net
++                # Fetch the next batch of data with larcv
++                # (Make sure to pull from the validation set)
++                io_start_time = datetime.datetime.now()
++                with self.timing_context("io"):
++                    minibatch_data = self.larcv_fetcher.fetch_next_batch('aux', force_pop = True)
++                io_end_time = datetime.datetime.now()
+ 
+-            self._net.eval()
+-            if self.args.run.compute_mode == ComputeMode.CPU:
+-                # Quantization not supported on CUDA
+-                val_net = torch.quantization.convert(self._net)
+-            else:
+-                val_net = self._net
+-            # Fetch the next batch of data with larcv
+-            # (Make sure to pull from the validation set)
+-            io_start_time = datetime.datetime.now()
+-            with self.timing_context("io"):
+-                minibatch_data = self.larcv_fetcher.fetch_next_batch('aux', force_pop = True)
+-            io_end_time = datetime.datetime.now()
+-
+-            # if mixed precision, and cuda, use autocast:
+-            if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
+-                with torch.cuda.amp.autocast():
++                # if mixed precision, and cuda, use autocast:
++                if self.args.run.precision == Precision.mixed and self.args.run.compute_mode == ComputeMode.GPU:
++                    with torch.cuda.amp.autocast():
++                        logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
++                else:
+                     logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
+-            else:
+-                logits_image, labels_image = self.forward_pass(minibatch_data, net=val_net)
+ 
+-            # Compute the loss based on the logits
+-            loss = self.loss_calculator(labels_image, logits_image)
++                # Compute the loss based on the logits
++                loss = self.loss_calculator(labels_image, logits_image)
+ 
+-            # Compute any necessary metrics:
+-            metrics = self._compute_metrics(logits_image, labels_image, loss)
++                # Compute any necessary metrics:
++                metrics = self._compute_metrics(logits_image, labels_image, loss)
+ 
+             self.log(metrics, saver="test")
+             self.summary(metrics, saver="test")
