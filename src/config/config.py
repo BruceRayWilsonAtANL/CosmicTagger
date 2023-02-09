@@ -15,6 +15,7 @@ class ComputeMode(Enum):
     GPU   = 1
     DPCPP = 2
     XPU   = 3
+    HPU   = 4
 
 class Precision(Enum):
     float32  = 0
@@ -40,6 +41,7 @@ class Run:
     id:                 str         = MISSING
     precision:          Precision   = Precision.float32
     profile:            bool        = False
+    lazy_mode:          bool        = True
 
 cs = ConfigStore.instance()
 
