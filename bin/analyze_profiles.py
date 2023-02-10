@@ -18,7 +18,7 @@ def parse_log_file(fname):
     times = []
     iteration = []
     io    = []
-    step  = []
+    step_  = []
 
     fom = None
     previous_time = None
@@ -44,7 +44,7 @@ def parse_log_file(fname):
             # -2 token is step time
             # -5 token is IO time
             # -8 token is instantaneous Img/s
-            step.append(float(tokens[-2]))
+            step_.append(float(tokens[-2]))
             io.append(float(tokens[-5].replace('(', '')))
             iteration.append(int(tokens[7]))
 #                 {"Time"   : pd.to_datetime(tokens[1]),
@@ -63,10 +63,10 @@ def parse_log_file(fname):
     # print(times[1:] - times[0:-1])
 
     io = numpy.asarray(io)[2:]
-    step = numpy.asarray(step)[2:]
+    step_ = numpy.asarray(step_)[2:]
 
     # Skip the first two steps, which is just the first duration
-    return numpy.asarray(iteration[:-2]), times[2:], io, step, fom
+    return numpy.asarray(iteration[:-2]), times[2:], io, step_, fom
 
 def analyze_iteration(arr):
     print(f"  Mean time: {numpy.mean(arr):.3f} +/- {numpy.std(arr):.3f}")
