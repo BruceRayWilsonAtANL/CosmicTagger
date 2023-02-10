@@ -161,18 +161,6 @@ def plot_run_data(plot_name, title, iteration, _times, _io, _step_time):
     plt.title(title, fontsize=30)
     plt.savefig(f"{plot_name}.pdf")
 
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--log-dir', type=pathlib.Path,
-                        help='Directory Location of the profiles to analyze')
-    parser.add_argument('--sum', dest='accumulate', action='store_const',
-                        const=sum, default=max,
-                        help='sum the integers (default: find the max)')
-
-    args = parser.parse_args()
-    main(args)
-
 
 # # ThetaGPU results
 # log_top = pathlib.Path("/home/cadams/ThetaGPU/CosmicTagger/output/torch/polaris/")
@@ -180,8 +168,9 @@ if __name__ == "__main__":
 # filename = pathlib.Path("process.log")
 #
 # Things that ran on Milan-PolarisAT
-log_top = pathlib.Path("/lus/grand/projects/PolarisAT/COSMICTAGGER/CosmicTagger/output/torch/polaris/")
+log_top = pathlib.Path("/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/output/torch/A21/")
 folder = pathlib.Path("at-baremetal-2022-06-08_512nodes-affinity-depth-open-network/")
+folder = pathlib.Path("01")
 filename = pathlib.Path("process.log")
 s=512
 
@@ -203,5 +192,6 @@ print(full_path)
 iteration, times, io, step_time, fom = parse_log_file(full_path)
 
 title=f"Polaris Milan AT: {4*s} GPUs, Container, FOM: {fom:.1f}"
-plot_run_data(f"polaris-milanAT-conda-open-nccl", title, iteration[10:], times[10:], io[10:], step_time[10:])
+title=f"Graphcore: {4*s} IPUs, Container, FOM: {fom:.1f}"
+plot_run_data(f"Graphcore", title, iteration[10:], times[10:], io[10:], step_time[10:])
 print("FOM: ", fom)
