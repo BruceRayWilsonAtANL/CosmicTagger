@@ -168,9 +168,9 @@ def plot_run_data(plot_name, title, iteration, _times, _io, _step_time):
 # filename = pathlib.Path("process.log")
 #
 # Things that ran on Milan-PolarisAT
-log_top = pathlib.Path("/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/output/torch/A21/")
+log_top = pathlib.Path("/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/outputs/2023-02-10/18-52-49/output/torch/uresnet/")
 folder = pathlib.Path("at-baremetal-2022-06-08_512nodes-affinity-depth-open-network/")
-folder = pathlib.Path("01")
+folder = pathlib.Path("bfloat16_2x10_1/")
 filename = pathlib.Path("process.log")
 s=512
 
@@ -191,7 +191,8 @@ print(full_path)
 
 iteration, times, io, step_time, fom = parse_log_file(full_path)
 
-title=f"Polaris Milan AT: {4*s} GPUs, Container, FOM: {fom:.1f}"
-title=f"Graphcore: {4*s} IPUs, Container, FOM: {fom:.1f}"
+#title=f"Polaris Milan AT: {4*s} GPUs, Container, FOM: {fom:.1f}"
+#title=f"Graphcore: {4*s} IPUs, Container, FOM: {fom:.1f}"
+title=f"Graphcore: {4*s} IPUs, Container, FOM: {fom}"
 plot_run_data(f"Graphcore", title, iteration[10:], times[10:], io[10:], step_time[10:])
 print("FOM: ", fom)
