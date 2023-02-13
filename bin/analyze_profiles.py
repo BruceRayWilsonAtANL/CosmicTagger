@@ -167,11 +167,14 @@ def plot_run_data(plot_name, title, iteration, _times, _io, _step_time):
 # folder = pathlib.Path("thetagpu_polaris_baremetal")
 # filename = pathlib.Path("process.log")
 #
-# Things that ran on Milan-PolarisAT
-log_top = pathlib.Path("/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/outputs/2023-02-10/19-44-41/output/torch/uresnet/")
-folder = pathlib.Path("at-baremetal-2022-06-08_512nodes-affinity-depth-open-network/")
-folder = pathlib.Path("bfloat16_2x10_1/")
+date      = '2023-02-13'
+time      = '20-36-11'
+folderStr = "bfloat16_2x10_1/"
+log_top = pathlib.Path(f"/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/outputs/{date}/{time}/output/torch/uresnet/")
+folder = pathlib.Path(folderStr)
 filename = pathlib.Path("process.log")
+
+
 s=512
 
 # Rahki results
