@@ -5,11 +5,11 @@ import numpy
 
 from datetime import datetime
 
-font = {'family' : 'Times',
-        'weight' : 'normal',
-        'size'   : 22}
+# font = {'family' : 'Times',
+#         'weight' : 'normal',
+#         'size'   : 22}
 
-matplotlib.rc('font', **font)
+# matplotlib.rc('font', **font)
 
 def parse_log_file(fname):
 
@@ -168,7 +168,7 @@ def plot_run_data(plot_name, title, iteration, _times, _io, _step_time):
 # filename = pathlib.Path("process.log")
 #
 # Things that ran on Milan-PolarisAT
-log_top = pathlib.Path("/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/outputs/2023-02-10/18-52-49/output/torch/uresnet/")
+log_top = pathlib.Path("/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/outputs/2023-02-10/19-44-41/output/torch/uresnet/")
 folder = pathlib.Path("at-baremetal-2022-06-08_512nodes-affinity-depth-open-network/")
 folder = pathlib.Path("bfloat16_2x10_1/")
 filename = pathlib.Path("process.log")
