@@ -2,7 +2,7 @@
 # git checkout Graphcore
 for i in {16,}
 do
-    name=bfloat16_2x10_${i} \
+    export name=bfloat16_2x10_${i}
     poprun \
     -vv \
     --num-instances=16 \
