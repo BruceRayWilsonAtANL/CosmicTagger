@@ -5,11 +5,11 @@ import numpy
 
 from datetime import datetime
 
-font = {'family' : 'Times',
-        'weight' : 'normal',
-        'size'   : 22}
+# font = {'family' : 'Times',
+#         'weight' : 'normal',
+#         'size'   : 22}
 
-matplotlib.rc('font', **font)
+# matplotlib.rc('font', **font)
 
 def parse_log_file(fname):
 
@@ -18,7 +18,7 @@ def parse_log_file(fname):
     times = []
     iteration = []
     io    = []
-    step  = []
+    step_  = []
 
     fom = None
     previous_time = None
@@ -44,7 +44,7 @@ def parse_log_file(fname):
             # -2 token is step time
             # -5 token is IO time
             # -8 token is instantaneous Img/s
-            step.append(float(tokens[-2]))
+            step_.append(float(tokens[-2]))
             io.append(float(tokens[-5].replace('(', '')))
             iteration.append(int(tokens[7]))
 #                 {"Time"   : pd.to_datetime(tokens[1]),
@@ -63,10 +63,10 @@ def parse_log_file(fname):
     # print(times[1:] - times[0:-1])
 
     io = numpy.asarray(io)[2:]
-    step = numpy.asarray(step)[2:]
+    step_ = numpy.asarray(step_)[2:]
 
     # Skip the first two steps, which is just the first duration
-    return numpy.asarray(iteration[:-2]), times[2:], io, step, fom
+    return numpy.asarray(iteration[:-2]), times[2:], io, step_, fom
 
 def analyze_iteration(arr):
     print(f"  Mean time: {numpy.mean(arr):.3f} +/- {numpy.std(arr):.3f}")
@@ -161,28 +161,20 @@ def plot_run_data(plot_name, title, iteration, _times, _io, _step_time):
     plt.title(title, fontsize=30)
     plt.savefig(f"{plot_name}.pdf")
 
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--log-dir', type=pathlib.Path,
-                        help='Directory Location of the profiles to analyze')
-    parser.add_argument('--sum', dest='accumulate', action='store_const',
-                        const=sum, default=max,
-                        help='sum the integers (default: find the max)')
-
-    args = parser.parse_args()
-    main(args)
-
 
 # # ThetaGPU results
 # log_top = pathlib.Path("/home/cadams/ThetaGPU/CosmicTagger/output/torch/polaris/")
 # folder = pathlib.Path("thetagpu_polaris_baremetal")
 # filename = pathlib.Path("process.log")
 #
-# Things that ran on Milan-PolarisAT
-log_top = pathlib.Path("/lus/grand/projects/PolarisAT/COSMICTAGGER/CosmicTagger/output/torch/polaris/")
-folder = pathlib.Path("at-baremetal-2022-06-08_512nodes-affinity-depth-open-network/")
+date      = '2023-02-14'
+time      = '19-09-30'
+folderStr = "bfloat16_2x10_1/"
+log_top = pathlib.Path(f"/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger_habana/outputs/{date}/{time}/output/torch/A21/")
+folder = pathlib.Path(folderStr)
 filename = pathlib.Path("process.log")
+
+
 s=512
 
 # Rahki results
@@ -202,6 +194,8 @@ print(full_path)
 
 iteration, times, io, step_time, fom = parse_log_file(full_path)
 
-title=f"Polaris Milan AT: {4*s} GPUs, Container, FOM: {fom:.1f}"
-plot_run_data(f"polaris-milanAT-conda-open-nccl", title, iteration[10:], times[10:], io[10:], step_time[10:])
+#title=f"Polaris Milan AT: {4*s} GPUs, Container, FOM: {fom:.1f}"
+#title=f"Graphcore: {4*s} IPUs, Container, FOM: {fom:.1f}"
+title=f"Graphcore: {4*s} IPUs, Container, FOM: {fom}"
+plot_run_data(f"Graphcore", title, iteration[10:], times[10:], io[10:], step_time[10:])
 print("FOM: ", fom)
