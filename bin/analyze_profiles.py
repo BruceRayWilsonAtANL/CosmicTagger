@@ -167,10 +167,11 @@ def plot_run_data(plot_name, title, iteration, _times, _io, _step_time):
 # folder = pathlib.Path("thetagpu_polaris_baremetal")
 # filename = pathlib.Path("process.log")
 #
-date      = '2023-02-13'
-time      = '20-36-11'
-folderStr = "bfloat16_2x10_1/"
-log_top = pathlib.Path(f"/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/outputs/{date}/{time}/output/torch/uresnet/")
+date      = '2023-02-15'
+time      = '11-18-20'
+config    = 'A21'
+folderStr = "bfloat16_2x10_16/"
+log_top = pathlib.Path(f"/home/wilsonb/DL/github.com/BruceRayWilsonAtANL/CosmicTagger/outputs/{date}/{time}/output/torch/{config}/")
 folder = pathlib.Path(folderStr)
 filename = pathlib.Path("process.log")
 
